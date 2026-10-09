@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+    SPDX-License-Identifier: Apache-2.0
+  -->
+  <PropertyGroup>
+    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <RootNamespace>OpenShell.Testing</RootNamespace>
+    <AssemblyName>OpenShell.Sdk.Testing</AssemblyName>
+    <PackageId>OpenShell.Sdk.Testing</PackageId>
+    <Description>In-memory fake of the OpenShell gateway client, for unit-testing code that uses OpenShell.Sdk.</Description>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/NVIDIA/OpenShell</RepositoryUrl>
+    <!-- CA1708: the proto package `openshell.v1` generates the `Openshell` namespace, which differs from `OpenShell` only by case. -->
+    <NoWarn>$(NoWarn);CA1708</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\OpenShell.Sdk\OpenShell.Sdk.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="OpenShell.Sdk.Tests" />
+  </ItemGroup>
+</Project>

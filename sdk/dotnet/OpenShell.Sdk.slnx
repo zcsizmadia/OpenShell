@@ -2,6 +2,7 @@
   <Folder Name="/src/">
     <Project Path="src/OpenShell.Sdk.DependencyInjection/OpenShell.Sdk.DependencyInjection.csproj" />
     <Project Path="src/OpenShell.Sdk/OpenShell.Sdk.csproj" />
+    <Project Path="src/OpenShell.Sdk.Testing/OpenShell.Sdk.Testing.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/OpenShell.Sdk.DependencyInjection.Tests/OpenShell.Sdk.DependencyInjection.Tests.csproj" />

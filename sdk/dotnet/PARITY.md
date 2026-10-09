@@ -128,6 +128,9 @@ and has not run against a real gateway.
   directory, where Go rejects them.
 - Go's added, modified, and deleted watch event types are not modelled; `Sandbox.Phase` carries that state.
 - Streaming calls are not retried by the retry policy; `WatchAsync` reconnects on its own.
+- The fake auto-creates unknown workspaces by default (`AutoCreateWorkspaces`), lets a global setting override a
+  sandbox value, fails deleting a provider that a sandbox uses with `Conflict`, returns redacted provider credentials
+  from listings, and records `ListenAsync` listeners without opening a socket.
 
 ## Out of scope
 

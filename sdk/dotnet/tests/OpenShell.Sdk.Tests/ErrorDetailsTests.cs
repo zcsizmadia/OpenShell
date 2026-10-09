@@ -5,8 +5,8 @@ using Google.Protobuf;
 using Google.Protobuf.WellKnownTypes;
 using Grpc.Core;
 using OpenShell.Tests.Support;
-using Wire = Openshell.V1;
 using GoogleRpc = Google.Rpc;
+using Wire = Openshell.V1;
 
 namespace OpenShell.Tests;
 

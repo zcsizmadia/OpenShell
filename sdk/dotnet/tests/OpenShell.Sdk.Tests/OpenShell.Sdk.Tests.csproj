@@ -15,5 +15,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\OpenShell.Sdk\OpenShell.Sdk.csproj" />
+    <ProjectReference Include="..\..\src\OpenShell.Sdk.Testing\OpenShell.Sdk.Testing.csproj" />
   </ItemGroup>
 </Project>

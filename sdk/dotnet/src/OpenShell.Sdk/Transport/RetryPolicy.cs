@@ -2,6 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 using Grpc.Core;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 
 namespace OpenShell;
 
@@ -59,8 +61,10 @@ public sealed record RetryPolicy
 }
 
 /// <summary>Wraps a <see cref="CallInvoker"/> so idempotent unary calls survive transient failures.</summary>
-internal sealed class RetryCallInvoker(CallInvoker inner, RetryPolicy policy, TimeProvider time, Func<double>? random = null) : CallInvoker
+internal sealed partial class RetryCallInvoker(
+    CallInvoker inner, RetryPolicy policy, TimeProvider time, Func<double>? random = null, ILogger? logger = null) : CallInvoker
 {
+    private readonly ILogger _logger = logger ?? NullLogger.Instance;
     private readonly Func<double> _random = random ?? Random.Shared.NextDouble;
 
     public override AsyncUnaryCall<TResponse> AsyncUnaryCall<TRequest, TResponse>(
@@ -115,6 +119,7 @@ internal sealed class RetryCallInvoker(CallInvoker inner, RetryPolicy policy, Ti
             }
             catch (RpcException e) when (CanRetry(e, attempt, options, out var delay))
             {
+                LogRetry(_logger, method.Name, attempt + 1, policy.MaxAttempts, delay.TotalMilliseconds, e.StatusCode);
                 await Task.Delay(delay, time, options.CancellationToken).ConfigureAwait(false);
             }
             catch (Exception e)
@@ -140,6 +145,9 @@ internal sealed class RetryCallInvoker(CallInvoker inner, RetryPolicy policy, Ti
         // Never retry past the caller's own deadline.
         return options.Deadline is not { } deadline || time.GetUtcNow().UtcDateTime + delay < deadline;
     }
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Retrying {Method} (attempt {Attempt} of {MaxAttempts}) in {DelayMs} ms after {Status}")]
+    private static partial void LogRetry(ILogger logger, string method, int attempt, int maxAttempts, double delayMs, StatusCode status);
 
     private sealed class Attempts<TResponse>
     {

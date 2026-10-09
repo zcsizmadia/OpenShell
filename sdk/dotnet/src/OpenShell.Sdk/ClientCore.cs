@@ -4,6 +4,8 @@
 using System.Runtime.CompilerServices;
 using Grpc.Core;
 using Grpc.Net.Client;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using Openshell.Datamodel.V1;
 using GrpcService = Openshell.V1.OpenShell;
 
@@ -27,6 +29,9 @@ internal sealed class ClientCore : IDisposable
     public GrpcService.OpenShellClient Grpc { get; }
 
     public TimeProvider Time { get; init; } = TimeProvider.System;
+
+    /// <summary>Logger for SDK-level events such as retries and watch reconnects; discards everything when no factory is configured.</summary>
+    public ILogger Logger { get; init; } = NullLogger.Instance;
 
     /// <summary>A resource whose lifetime follows the client, such as an edge tunnel proxy.</summary>
     public IDisposable? OwnedResource { get; init; }

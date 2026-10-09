@@ -3,6 +3,7 @@
 
 using System.Runtime.CompilerServices;
 using Google.Protobuf.WellKnownTypes;
+using Microsoft.Extensions.Logging;
 using Wire = Openshell.V1;
 
 namespace OpenShell;
@@ -27,10 +28,13 @@ public interface ISandboxWatchClient
     ValueTask<LogResult> GetLogsAsync(string sandbox, LogOptions? options = null, CancellationToken cancellationToken = default);
 }
 
-internal sealed class SandboxWatchClient(ClientCore core, string workspace) : ISandboxWatchClient
+internal sealed partial class SandboxWatchClient(ClientCore core, string workspace) : ISandboxWatchClient
 {
     private static readonly TimeSpan InitialBackoff = TimeSpan.FromMilliseconds(100);
     private static readonly TimeSpan MaxBackoff = TimeSpan.FromSeconds(2);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Watch stream for workspace {Workspace} lost its connection; reconnecting in {DelayMs} ms (attempt {Attempt})")]
+    private static partial void LogReconnect(ILogger logger, string workspace, double delayMs, int attempt);
 
     public IAsyncEnumerable<WatchEvent> WatchAsync(string sandbox, WatchOptions? options = null, CancellationToken cancellationToken = default)
     {
@@ -115,6 +119,7 @@ internal sealed class SandboxWatchClient(ClientCore core, string workspace) : IS
                 yield break;
             }
 
+            LogReconnect(core.Logger, workspace, backoff.TotalMilliseconds, attempts);
             await Task.Delay(backoff, core.Time, cancellationToken).ConfigureAwait(false);
             backoff = TimeSpan.FromTicks(Math.Min(backoff.Ticks * 2, MaxBackoff.Ticks));
         }

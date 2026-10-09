@@ -161,6 +161,9 @@ public sealed class OpenShellClient : IOpenShellClient
         }
     }
 
+    private static Microsoft.Extensions.Logging.ILogger LoggerFor(OpenShellClientOptions options) =>
+        options.LoggerFactory?.CreateLogger("OpenShell.Sdk") ?? Microsoft.Extensions.Logging.Abstractions.NullLogger.Instance;
+
     /// <summary>Creates a client that disposes <paramref name="resource"/> together with its connection.</summary>
     internal static OpenShellClient CreateOwning(OpenShellClientOptions options, IDisposable resource) =>
         new(Build(options, resource), options.DefaultWorkspace, ownsCore: true);
@@ -168,18 +171,27 @@ public sealed class OpenShellClient : IOpenShellClient
     private static ClientCore Build(OpenShellClientOptions options, IDisposable? resource = null)
     {
         var channel = Transport.ChannelFactory.Create(options);
+        var logger = LoggerFor(options);
         Grpc.Core.CallInvoker invoker = channel.CreateCallInvoker();
         if (options.Retry.IsEnabled)
         {
-            invoker = new RetryCallInvoker(invoker, options.Retry, TimeProvider.System);
+            invoker = new RetryCallInvoker(invoker, options.Retry, TimeProvider.System, logger: logger);
         }
 
-        return new ClientCore(options, channel, new GrpcService.OpenShellClient(invoker)) { OwnedResource = resource };
+        // Outside the retry layer, so a retried call is one span with the final outcome.
+        invoker = new InstrumentedCallInvoker(invoker);
+
+        return new ClientCore(options, channel, new GrpcService.OpenShellClient(invoker)) { OwnedResource = resource, Logger = logger };
     }
 
     /// <summary>Test seam: builds a client over a pre-built gRPC invoker.</summary>
-    internal static OpenShellClient ForTesting(OpenShellClientOptions options, Grpc.Core.CallInvoker invoker, TimeProvider? time = null, bool useRetry = false) =>
-        new(new ClientCore(options, null, new GrpcService.OpenShellClient(useRetry ? new RetryCallInvoker(invoker, options.Retry, time ?? TimeProvider.System) : invoker)) { Time = time ?? TimeProvider.System },
+    internal static OpenShellClient ForTesting(OpenShellClientOptions options, Grpc.Core.CallInvoker invoker, TimeProvider? time = null, bool useRetry = false)
+    {
+        var logger = LoggerFor(options);
+        var effective = useRetry ? new RetryCallInvoker(invoker, options.Retry, time ?? TimeProvider.System, logger: logger) : invoker;
+        return new OpenShellClient(
+            new ClientCore(options, null, new GrpcService.OpenShellClient(new InstrumentedCallInvoker(effective))) { Time = time ?? TimeProvider.System, Logger = logger },
             options.DefaultWorkspace,
             ownsCore: true);
+    }
 }

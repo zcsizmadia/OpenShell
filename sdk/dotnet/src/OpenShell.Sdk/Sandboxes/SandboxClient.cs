@@ -20,6 +20,9 @@ public interface ISandboxClient
     /// <summary>Lists sandboxes lazily, page by page.</summary>
     Pager<Sandbox> List(ListOptions? options = null);
 
+    /// <summary>Lists the ids of all matching sandboxes, across every page.</summary>
+    ValueTask<IReadOnlyList<string>> ListIdsAsync(ListOptions? options = null, CancellationToken cancellationToken = default);
+
     /// <summary>Stops a running sandbox.</summary>
     ValueTask<Sandbox> StopAsync(string name, CancellationToken cancellationToken = default);
 
@@ -80,6 +83,17 @@ internal sealed class SandboxClient(ClientCore core, string workspace) : ISandbo
                     response.NextPageToken is { Length: > 0 } next ? next : null);
             },
             options.PageToken);
+    }
+
+    public async ValueTask<IReadOnlyList<string>> ListIdsAsync(ListOptions? options = null, CancellationToken cancellationToken = default)
+    {
+        var ids = new List<string>();
+        await foreach (var sandbox in List(options).WithCancellation(cancellationToken).ConfigureAwait(false))
+        {
+            ids.Add(sandbox.Id);
+        }
+
+        return ids;
     }
 
     public async ValueTask<Sandbox> StopAsync(string name, CancellationToken cancellationToken = default)

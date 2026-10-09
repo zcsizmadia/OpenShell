@@ -187,6 +187,33 @@ public class SandboxClientTests
     }
 
     [Test]
+    public async Task ListIds_collects_ids_across_pages()
+    {
+        var invoker = new FakeCallInvoker().Unary<Wire.ListSandboxesRequest, Wire.ListSandboxesResponse>("ListSandboxes", r =>
+        {
+            var reply = new Wire.ListSandboxesResponse();
+            if (r.PageToken == "")
+            {
+                reply.Sandboxes.Add(Reply("a", id: "id-a").Sandbox);
+                reply.NextPageToken = "p2";
+            }
+            else
+            {
+                reply.Sandboxes.Add(Reply("b", id: "id-b").Sandbox);
+            }
+
+            return reply;
+        });
+        using var client = ClientTests.NewClient(invoker);
+
+        var ids = await client.Sandboxes.ListIdsAsync(new ListOptions { AllWorkspaces = true });
+        var again = await client.Sandboxes.ListIdsAsync();
+
+        await Assert.That(ids).IsEquivalentTo(new[] { "id-a", "id-b" });
+        await Assert.That(again.Count).IsEqualTo(2);
+    }
+
+    [Test]
     public async Task Stop_and_start_return_updated_sandbox()
     {
         var invoker = new FakeCallInvoker()

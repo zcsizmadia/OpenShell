@@ -20,6 +20,12 @@ public interface IOpenShellClient : IDisposable
     /// <summary>Command execution.</summary>
     IExecClient Exec { get; }
 
+    /// <summary>Workspace and membership management.</summary>
+    IWorkspaceClient Workspaces { get; }
+
+    /// <summary>Reusable sandbox workload templates.</summary>
+    ISandboxTemplateClient Templates { get; }
+
     /// <summary>Returns a view of this client bound to another workspace; the connection is shared.</summary>
     IOpenShellClient InWorkspace(string workspace);
 }
@@ -44,6 +50,8 @@ public sealed class OpenShellClient : IOpenShellClient
         Health = new HealthClient(core);
         Sandboxes = new SandboxClient(core, workspace);
         Exec = new ExecClient(core, workspace);
+        Workspaces = new WorkspaceClient(core);
+        Templates = new SandboxTemplateClient(core, workspace);
     }
 
     /// <inheritdoc />
@@ -57,6 +65,12 @@ public sealed class OpenShellClient : IOpenShellClient
 
     /// <inheritdoc />
     public IExecClient Exec { get; }
+
+    /// <inheritdoc />
+    public IWorkspaceClient Workspaces { get; }
+
+    /// <inheritdoc />
+    public ISandboxTemplateClient Templates { get; }
 
     /// <summary>The generated gRPC client, for RPCs the curated surface does not cover yet.</summary>
     public GrpcService.OpenShellClient Raw => _core.Grpc;

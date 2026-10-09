@@ -34,12 +34,10 @@ public sealed class RefreshableToken : IDisposable
     public async ValueTask<string> GetAsync(CancellationToken cancellationToken = default)
     {
         var snapshot = Volatile.Read(ref _current);
-        if (!IsStale(snapshot))
-        {
-            return snapshot.Value;
-        }
 
-        return await RefreshAsync(snapshot, force: false, cancellationToken).ConfigureAwait(false);
+        return IsStale(snapshot)
+            ? await RefreshAsync(snapshot, force: false, cancellationToken).ConfigureAwait(false)
+            : snapshot.Value;
     }
 
     /// <summary>
@@ -55,7 +53,7 @@ public sealed class RefreshableToken : IDisposable
 
     /// <summary>Exposes this token as an <see cref="IAuthProvider"/> that recovers from <c>Unauthenticated</c>.</summary>
     public IAuthProvider AsAuthProvider() =>
-        new Auth.BearerAuthProvider(ct => GetAsync(ct), ct => RefreshNowAsync(ct));
+        new Auth.BearerAuthProvider(GetAsync, RefreshNowAsync);
 
     /// <inheritdoc />
     public void Dispose() => _gate.Dispose();

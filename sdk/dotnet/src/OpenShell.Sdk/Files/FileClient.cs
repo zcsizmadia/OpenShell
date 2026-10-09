@@ -313,17 +313,16 @@ internal sealed class FileClient(IExecClient exec) : IFileClient
 
         var full = Path.GetFullPath(Path.Combine(root, entryName));
         var rootWithSeparator = Path.EndsInDirectorySeparator(root) ? root : root + Path.DirectorySeparatorChar;
-        if (string.Equals(full.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar), root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar), StringComparison.Ordinal))
-        {
-            return null;
-        }
+        var isRoot = string.Equals(
+            full.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+            root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+            StringComparison.Ordinal);
 
-        if (!full.StartsWith(rootWithSeparator, StringComparison.Ordinal))
-        {
-            throw new InvalidDataException($"unsafe tar entry name '{entryName}'");
-        }
-
-        return full;
+        return isRoot
+            ? null
+            : full.StartsWith(rootWithSeparator, StringComparison.Ordinal)
+                ? full
+                : throw new InvalidDataException($"unsafe tar entry name '{entryName}'");
     }
 
     private async ValueTask RunUploadAsync(string sandbox, string remoteDirectory, Func<Stream, CancellationToken, ValueTask> writeTar, CancellationToken cancellationToken)

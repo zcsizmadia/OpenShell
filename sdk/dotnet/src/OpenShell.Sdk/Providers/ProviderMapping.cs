@@ -17,17 +17,11 @@ internal static class ProviderMapping
 
     public static DateTimeOffset? ToTime(Timestamp? t)
     {
-        if (t is null)
-        {
-            return null;
-        }
-
-        if (!IsCanonical(t))
-        {
-            throw new OpenShellException(OpenShellErrorKind.Internal, "gateway returned a malformed timestamp");
-        }
-
-        return t.ToDateTimeOffset();
+        return t is null
+            ? null
+            : IsCanonical(t)
+                ? t.ToDateTimeOffset()
+                : throw new OpenShellException(OpenShellErrorKind.Internal, "gateway returned a malformed timestamp");
     }
 
     public static Timestamp ToWire(DateTimeOffset t) => Timestamp.FromDateTimeOffset(t);

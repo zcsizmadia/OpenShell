@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text;
 
 namespace OpenShell;
 
@@ -59,16 +58,9 @@ public sealed record Provider
     internal static IReadOnlyDictionary<string, CredentialHandle> EmptyHandles { get; } =
         new System.Collections.ObjectModel.ReadOnlyDictionary<string, CredentialHandle>(new Dictionary<string, CredentialHandle>());
 
-    // The generated ToString must never print credential values.
-    private bool PrintMembers(StringBuilder builder)
-    {
-        builder.Append("Name = ").Append(Name)
-            .Append(", Type = ").Append(Type)
-            .Append(", Workspace = ").Append(Workspace)
-            .Append(", ResourceVersion = ").Append(ResourceVersion)
-            .Append(", CredentialKeys = [").AppendJoin(", ", Credentials.Keys).Append(']');
-        return true;
-    }
+    /// <summary>Describes the provider without printing credential values.</summary>
+    public override string ToString() =>
+        $"Provider {{ Name = {Name}, Type = {Type}, Workspace = {Workspace}, ResourceVersion = {ResourceVersion}, CredentialKeys = [{string.Join(", ", Credentials.Keys)}] }}";
 }
 
 /// <summary>Options for <see cref="IProviderClient.CreateAsync"/>.</summary>
@@ -110,10 +102,7 @@ public sealed record ProviderCredentialsOptions
 /// <summary>An exported runtime secret. Its <see cref="ToString"/> never reveals the value.</summary>
 public sealed record ProviderCredentialValue(string Value, DateTimeOffset? ExpirationTime = null)
 {
-    // Redacts the secret from the generated ToString; explicit property access still exposes it.
-    private bool PrintMembers(StringBuilder builder)
-    {
-        builder.Append("Value = <redacted>, ExpirationTime = ").Append(ExpirationTime?.ToString("O", System.Globalization.CultureInfo.InvariantCulture) ?? "none");
-        return true;
-    }
+    /// <summary>Redacts the secret; explicit property access still exposes it.</summary>
+    public override string ToString() =>
+        $"ProviderCredentialValue {{ Value = <redacted>, ExpirationTime = {ExpirationTime?.ToString("O", System.Globalization.CultureInfo.InvariantCulture) ?? "none"} }}";
 }

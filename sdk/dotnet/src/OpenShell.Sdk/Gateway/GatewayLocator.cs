@@ -49,12 +49,9 @@ public sealed class GatewayLocator
 
             if (_env("XDG_CONFIG_HOME") is { Length: > 0 } xdg)
             {
-                if (!Path.IsPathRooted(xdg))
-                {
-                    throw new OpenShellException(OpenShellErrorKind.InvalidConfig, "XDG_CONFIG_HOME must be an absolute path");
-                }
-
-                return Path.Combine(xdg, AppName);
+                return Path.IsPathRooted(xdg)
+                    ? Path.Combine(xdg, AppName)
+                    : throw new OpenShellException(OpenShellErrorKind.InvalidConfig, "XDG_CONFIG_HOME must be an absolute path");
             }
 
             if (OperatingSystem.IsWindows() && _env("APPDATA") is { Length: > 0 } appData)
@@ -68,12 +65,9 @@ public sealed class GatewayLocator
                 home = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
             }
 
-            if (string.IsNullOrEmpty(home))
-            {
-                throw new OpenShellException(OpenShellErrorKind.InvalidConfig, "cannot determine home directory");
-            }
-
-            return Path.Combine(home, ".config", AppName);
+            return string.IsNullOrEmpty(home)
+                ? throw new OpenShellException(OpenShellErrorKind.InvalidConfig, "cannot determine home directory")
+                : Path.Combine(home, ".config", AppName);
         }
     }
 
@@ -225,29 +219,26 @@ public sealed class GatewayLocator
             throw Invalid($"cannot read {MetadataFile} for gateway '{name}'", e);
         }
 
-        if (meta is null || string.IsNullOrEmpty(meta.GatewayEndpoint))
-        {
-            throw Invalid($"missing gateway_endpoint in {MetadataFile} for gateway '{name}'");
-        }
-
-        if (!Uri.TryCreate(meta.GatewayEndpoint, UriKind.Absolute, out var endpoint) || endpoint.Scheme is not ("http" or "https"))
-        {
-            throw Invalid($"gateway_endpoint for gateway '{name}' must be an absolute http:// or https:// URL");
-        }
-
-        return new GatewayMetadata
-        {
-            Name = name,
-            Endpoint = endpoint,
-            AuthMode = ParseAuthMode(meta.AuthMode),
-            Source = source,
-            Directory = directory,
-            OidcIssuer = NullIfEmpty(meta.OidcIssuer),
-            OidcClientId = NullIfEmpty(meta.OidcClientId),
-            OidcAudience = NullIfEmpty(meta.OidcAudience),
-            OidcScopes = NullIfEmpty(meta.OidcScopes),
-        };
+        return meta is { GatewayEndpoint: { Length: > 0 } gatewayEndpoint }
+            ? new GatewayMetadata
+            {
+                Name = name,
+                Endpoint = ParseEndpoint(gatewayEndpoint, name),
+                AuthMode = ParseAuthMode(meta.AuthMode),
+                Source = source,
+                Directory = directory,
+                OidcIssuer = NullIfEmpty(meta.OidcIssuer),
+                OidcClientId = NullIfEmpty(meta.OidcClientId),
+                OidcAudience = NullIfEmpty(meta.OidcAudience),
+                OidcScopes = NullIfEmpty(meta.OidcScopes),
+            }
+            : throw Invalid($"missing gateway_endpoint in {MetadataFile} for gateway '{name}'");
     }
+
+    private static Uri ParseEndpoint(string value, string name) =>
+        Uri.TryCreate(value, UriKind.Absolute, out var endpoint) && endpoint.Scheme is "http" or "https"
+            ? endpoint
+            : throw Invalid($"gateway_endpoint for gateway '{name}' must be an absolute http:// or https:// URL");
 
     private static GatewayAuthMode ParseAuthMode(string? raw) => raw switch
     {

@@ -41,7 +41,10 @@ public sealed class OidcException : OpenShellException
 {
     /// <summary>Creates an OIDC exception.</summary>
     public OidcException(OidcFailure failure, string message, Exception? innerException = null)
-        : base(KindFor(failure), message, innerException) => Failure = failure;
+        : base(KindFor(failure), message, innerException)
+    {
+        Failure = failure;
+    }
 
     /// <summary>The step that failed.</summary>
     public OidcFailure Failure { get; }

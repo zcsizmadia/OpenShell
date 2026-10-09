@@ -33,7 +33,7 @@ internal static class ChannelFactory
                 $"refusing to send credentials over plaintext http:// to non-loopback host '{address.Host}'; use https:// or set AllowInsecureAuth");
         }
 
-        if (options.Tls is { ClientCertificate: { HasPrivateKey: false } })
+        if (options.Tls is { ClientCertificate.HasPrivateKey: false })
         {
             throw Invalid("mTLS client certificate must include its private key");
         }

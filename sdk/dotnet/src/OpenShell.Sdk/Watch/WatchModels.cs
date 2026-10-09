@@ -45,7 +45,10 @@ public sealed record DraftPolicyUpdate(ulong DraftVersion, uint NewChunks, uint 
 /// <summary>An event on a sandbox watch stream.</summary>
 public abstract record WatchEvent
 {
-    private protected WatchEvent(string cursor) => Cursor = cursor;
+    private protected WatchEvent(string cursor)
+    {
+        Cursor = cursor;
+    }
 
     /// <summary>
     /// Opaque resume token. Pass it as <see cref="WatchOptions.ResumeAfterCursor"/> to continue after this event.
@@ -59,7 +62,10 @@ public sealed record SandboxUpdated : WatchEvent
 {
     /// <summary>Creates the event.</summary>
     public SandboxUpdated(Sandbox sandbox, string cursor)
-        : base(cursor) => Sandbox = sandbox;
+        : base(cursor)
+    {
+        Sandbox = sandbox;
+    }
 
     /// <summary>The sandbox after the change.</summary>
     public Sandbox Sandbox { get; }
@@ -70,7 +76,10 @@ public sealed record LogReceived : WatchEvent
 {
     /// <summary>Creates the event.</summary>
     public LogReceived(LogLine line, string cursor)
-        : base(cursor) => Line = line;
+        : base(cursor)
+    {
+        Line = line;
+    }
 
     /// <summary>The log line.</summary>
     public LogLine Line { get; }
@@ -81,7 +90,10 @@ public sealed record PlatformEventReceived : WatchEvent
 {
     /// <summary>Creates the event.</summary>
     public PlatformEventReceived(PlatformEvent platformEvent, string cursor)
-        : base(cursor) => Event = platformEvent;
+        : base(cursor)
+    {
+        Event = platformEvent;
+    }
 
     /// <summary>The platform event.</summary>
     public PlatformEvent Event { get; }
@@ -92,7 +104,10 @@ public sealed record WatchWarning : WatchEvent
 {
     /// <summary>Creates the event.</summary>
     public WatchWarning(string message)
-        : base("") => Message = message;
+        : base("")
+    {
+        Message = message;
+    }
 
     /// <summary>The warning text.</summary>
     public string Message { get; }
@@ -103,7 +118,10 @@ public sealed record DraftPolicyUpdated : WatchEvent
 {
     /// <summary>Creates the event.</summary>
     public DraftPolicyUpdated(DraftPolicyUpdate update)
-        : base("") => Update = update;
+        : base("")
+    {
+        Update = update;
+    }
 
     /// <summary>The update.</summary>
     public DraftPolicyUpdate Update { get; }

@@ -48,32 +48,30 @@ internal sealed class StubHandler : HttpMessageHandler
         bool deviceEndpoint = false,
         Func<string, string>? discoveryTransform = null)
     {
-        var handler = new StubHandler();
-        handler.Respond = request =>
+        string DiscoveryDocument()
         {
-            var path = request.Url.AbsolutePath;
-            if (path.EndsWith("/.well-known/openid-configuration", StringComparison.Ordinal))
-            {
-                var trimmed = issuer.TrimEnd('/');
-                var doc = $$"""
-                    {"issuer":"{{issuer}}","authorization_endpoint":"{{trimmed}}/authorize","token_endpoint":"{{trimmed}}/token"
-                    {{(deviceEndpoint ? $",\"device_authorization_endpoint\":\"{trimmed}/device\"" : "")}}
-                    {{(pkce ? ",\"code_challenge_methods_supported\":[\"plain\",\"S256\"]" : "")}}}
-                    """;
-                return Json(discoveryTransform?.Invoke(doc) ?? doc);
-            }
+            var trimmed = issuer.TrimEnd('/');
+            var doc = $$"""
+            {"issuer":"{{issuer}}","authorization_endpoint":"{{trimmed}}/authorize","token_endpoint":"{{trimmed}}/token"
+            {{(deviceEndpoint ? $",\"device_authorization_endpoint\":\"{trimmed}/device\"" : "")}}
+            {{(pkce ? ",\"code_challenge_methods_supported\":[\"plain\",\"S256\"]" : "")}}}
+            """;
+            return discoveryTransform?.Invoke(doc) ?? doc;
+        }
 
-            if (path.EndsWith("/token", StringComparison.Ordinal) && token is not null)
+        var handler = new StubHandler
+        {
+            Respond = request =>
             {
-                return token(request);
+                var path = request.Url.AbsolutePath;
+                return path switch
+                {
+                    _ when path.EndsWith("/.well-known/openid-configuration", StringComparison.Ordinal) => Json(DiscoveryDocument()),
+                    _ when path.EndsWith("/token", StringComparison.Ordinal) && token is not null => token(request),
+                    _ when path.EndsWith("/device", StringComparison.Ordinal) && device is not null => device(request),
+                    _ => new HttpResponseMessage(HttpStatusCode.NotFound),
+                };
             }
-
-            if (path.EndsWith("/device", StringComparison.Ordinal) && device is not null)
-            {
-                return device(request);
-            }
-
-            return new HttpResponseMessage(HttpStatusCode.NotFound);
         };
         return handler;
     }

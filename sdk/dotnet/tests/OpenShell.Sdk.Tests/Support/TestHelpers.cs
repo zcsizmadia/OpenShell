@@ -47,7 +47,10 @@ internal sealed class TempDirectory : IDisposable
 /// <summary>The shared OAuth client-credentials conformance fixture used by every SDK.</summary>
 internal sealed class ConformanceFixture
 {
-    private ConformanceFixture(JsonElement root) => Root = root;
+    private ConformanceFixture(JsonElement root)
+    {
+        Root = root;
+    }
 
     public JsonElement Root { get; }
 
@@ -59,7 +62,12 @@ internal sealed class ConformanceFixture
             var candidate = Path.Combine(dir.FullName, "sdk", "conformance", "oauth-client-credentials.json");
             if (File.Exists(candidate))
             {
-                return new ConformanceFixture(JsonDocument.Parse(File.ReadAllText(candidate)).RootElement.Clone());
+#if NET10_0_OR_GREATER
+                return new ConformanceFixture(JsonElement.Parse(File.ReadAllText(candidate)));
+#else
+                using var document = JsonDocument.Parse(File.ReadAllText(candidate));
+                return new ConformanceFixture(document.RootElement.Clone());
+#endif
             }
 
             dir = dir.Parent;

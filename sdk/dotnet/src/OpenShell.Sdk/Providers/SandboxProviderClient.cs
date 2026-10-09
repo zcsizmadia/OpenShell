@@ -103,12 +103,9 @@ internal sealed class SandboxProviderClient(ClientCore core, string workspace) :
     public ValueTask<ProviderReadinessStatus> GetStatusAsync(string sandbox, string? provider = null, string? receiptId = null, CancellationToken cancellationToken = default)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(sandbox);
-        if (string.IsNullOrEmpty(provider) && string.IsNullOrEmpty(receiptId))
-        {
-            throw new ArgumentException("a provider name or receipt id is required", nameof(provider));
-        }
-
-        return FetchAsync(workspace, sandbox, provider ?? "", receiptId ?? "", cancellationToken);
+        return string.IsNullOrEmpty(provider) && string.IsNullOrEmpty(receiptId)
+            ? throw new ArgumentException("a provider name or receipt id is required", nameof(provider))
+            : FetchAsync(workspace, sandbox, provider ?? "", receiptId ?? "", cancellationToken);
     }
 
     public ValueTask<ProviderReadinessStatus> GetStatusAsync(ProviderMutationReceipt receipt, CancellationToken cancellationToken = default)

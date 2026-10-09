@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-using System.Text;
 using Wire = Openshell.V1;
 
 namespace OpenShell;
@@ -88,14 +87,9 @@ public sealed record RefreshConfig
     /// <summary>Idempotency key.</summary>
     public string? RequestId { get; init; }
 
-    private bool PrintMembers(StringBuilder builder)
-    {
-        builder.Append("Provider = ").Append(Provider)
-            .Append(", CredentialKey = ").Append(CredentialKey)
-            .Append(", Strategy = ").Append(Strategy)
-            .Append(", MaterialKeys = [").AppendJoin(", ", Material.Keys).Append(']');
-        return true;
-    }
+    /// <summary>Describes the configuration without printing refresh material.</summary>
+    public override string ToString() =>
+        $"RefreshConfig {{ Provider = {Provider}, CredentialKey = {CredentialKey}, Strategy = {Strategy}, MaterialKeys = [{string.Join(", ", Material.Keys)}] }}";
 }
 
 /// <summary>Gateway-owned credential refresh operations.</summary>

@@ -10,7 +10,6 @@
     <PackageId>OpenShell.Sdk</PackageId>
     <Authors>NVIDIA</Authors>
     <Description>.NET client for the OpenShell gateway.</Description>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAotCompatible>true</IsAotCompatible>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>

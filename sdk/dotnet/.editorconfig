@@ -24,6 +24,10 @@ trim_trailing_whitespace = false
 file_header_template = SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.\nSPDX-License-Identifier: Apache-2.0
 dotnet_diagnostic.IDE0073.severity = error
 
+# IDE0130: the public API lives in one flat `OpenShell` namespace so consumers need a single using, as with
+# the Azure SDK and grpc-dotnet. Folders organize the source only; they are not namespaces.
+dotnet_style_namespace_match_folder = false
+
 # Organization
 dotnet_sort_system_directives_first = true
 dotnet_separate_import_directive_groups = false
@@ -70,6 +74,21 @@ dotnet_naming_symbols.interfaces.applicable_kinds = interface
 dotnet_naming_style.begins_with_i.required_prefix = I
 dotnet_naming_style.begins_with_i.capitalization = pascal_case
 
+# Constants and static readonly fields are PascalCase by .NET convention; only instance fields take the underscore.
+dotnet_naming_rule.constants_pascal.severity = warning
+dotnet_naming_rule.constants_pascal.symbols = constants
+dotnet_naming_rule.constants_pascal.style = pascal_case_style
+dotnet_naming_symbols.constants.applicable_kinds = field
+dotnet_naming_symbols.constants.required_modifiers = const
+
+dotnet_naming_rule.static_readonly_pascal.severity = warning
+dotnet_naming_rule.static_readonly_pascal.symbols = static_readonly_fields
+dotnet_naming_rule.static_readonly_pascal.style = pascal_case_style
+dotnet_naming_symbols.static_readonly_fields.applicable_kinds = field
+dotnet_naming_symbols.static_readonly_fields.required_modifiers = static, readonly
+
+dotnet_naming_style.pascal_case_style.capitalization = pascal_case
+
 dotnet_naming_rule.private_fields_underscore.severity = suggestion
 dotnet_naming_rule.private_fields_underscore.symbols = private_fields
 dotnet_naming_rule.private_fields_underscore.style = underscore_camel
@@ -85,6 +104,9 @@ dotnet_diagnostic.CA1708.severity = none
 
 # Test code: sentence-style snake_case names and freely allocated test data.
 [tests/**.cs]
+# Public API documentation is generated for every project so the unnecessary-usings analyzer (IDE0005) can run;
+# test code is not public API.
+dotnet_diagnostic.CS1591.severity = none
 dotnet_diagnostic.CA1305.severity = none
 dotnet_diagnostic.CA1707.severity = none
 dotnet_diagnostic.CA1822.severity = none

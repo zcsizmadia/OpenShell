@@ -33,14 +33,9 @@ public sealed record SshSession
     /// <summary>Absolute expiry; null means none.</summary>
     public DateTimeOffset? ExpiresAt { get; init; }
 
-    private bool PrintMembers(StringBuilder builder)
-    {
-        builder.Append("SandboxId = ").Append(SandboxId)
-            .Append(", Token = <redacted>, GatewayHost = ").Append(GatewayHost)
-            .Append(", GatewayPort = ").Append(GatewayPort)
-            .Append(", GatewayScheme = ").Append(GatewayScheme);
-        return true;
-    }
+    /// <summary>Describes the session with the token redacted.</summary>
+    public override string ToString() =>
+        $"SshSession {{ SandboxId = {SandboxId}, Token = <redacted>, GatewayHost = {GatewayHost}, GatewayPort = {GatewayPort}, GatewayScheme = {GatewayScheme} }}";
 }
 
 /// <summary>Options for <see cref="ISshClient.TunnelAsync"/>.</summary>

@@ -172,20 +172,20 @@ public class GatewayLocatorTests
     {
         using var root = new TempDirectory();
         var locator = Locator(root);
-        var missing = await Assert.That(() => locator.ResolveActiveName()).Throws<OpenShellException>();
+        var missing = await Assert.That(locator.ResolveActiveName).Throws<OpenShellException>();
         await Assert.That(missing!.Kind).IsEqualTo(OpenShellErrorKind.NotFound);
 
         var file = Path.Combine(root.Make("user"), "active_gateway");
         File.WriteAllText(file, "  \n");
-        var empty = await Assert.That(() => locator.ResolveActiveName()).Throws<OpenShellException>();
+        var empty = await Assert.That(locator.ResolveActiveName).Throws<OpenShellException>();
         await Assert.That(empty!.Kind).IsEqualTo(OpenShellErrorKind.NotFound);
 
         File.WriteAllText(file, "../escape");
-        var invalid = await Assert.That(() => locator.ResolveActiveName()).Throws<OpenShellException>();
+        var invalid = await Assert.That(locator.ResolveActiveName).Throws<OpenShellException>();
         await Assert.That(invalid!.Kind).IsEqualTo(OpenShellErrorKind.InvalidConfig);
 
         var badEnv = Locator(root, new() { ["OPENSHELL_GATEWAY"] = "a/b" });
-        await Assert.That(() => badEnv.ResolveActiveName()).Throws<OpenShellException>();
+        await Assert.That(badEnv.ResolveActiveName).Throws<OpenShellException>();
     }
 
     [Test]

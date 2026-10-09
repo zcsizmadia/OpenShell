@@ -11,7 +11,10 @@ public sealed class ClientCredentialsAuth : IAuthProvider, IDisposable
 {
     private readonly RefreshableToken _token;
 
-    private ClientCredentialsAuth(RefreshableToken token) => _token = token;
+    private ClientCredentialsAuth(RefreshableToken token)
+    {
+        _token = token;
+    }
 
     /// <inheritdoc />
     public bool SendsCredentials => true;

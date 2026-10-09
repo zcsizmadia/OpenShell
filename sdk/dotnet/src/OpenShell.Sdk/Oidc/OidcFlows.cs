@@ -229,17 +229,14 @@ internal static class OidcFlows
             throw new OidcException(OidcFailure.DeviceCode, "invalid device authorization response JSON");
         }
 
-        if (device is null || string.IsNullOrEmpty(device.DeviceCode) || string.IsNullOrEmpty(device.UserCode))
+        return device switch
         {
-            throw new OidcException(OidcFailure.DeviceCode, "device authorization response missing device_code or user_code");
-        }
-
-        if (string.IsNullOrEmpty(device.VerificationUri))
-        {
-            throw new OidcException(OidcFailure.DeviceCode, "device authorization response missing verification_uri");
-        }
-
-        return device;
+            null or { DeviceCode: null or "" } or { UserCode: null or "" } =>
+                throw new OidcException(OidcFailure.DeviceCode, "device authorization response missing device_code or user_code"),
+            { VerificationUri: null or "" } =>
+                throw new OidcException(OidcFailure.DeviceCode, "device authorization response missing verification_uri"),
+            _ => device,
+        };
     }
 
     private static async Task<OidcTokens> PollDeviceAsync(OidcResolved cfg, string tokenEndpoint, string deviceCode, long interval, CancellationToken ct)

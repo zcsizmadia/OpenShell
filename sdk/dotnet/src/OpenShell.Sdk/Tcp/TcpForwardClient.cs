@@ -95,7 +95,7 @@ internal sealed class ForwardListener : IForwardListener
     private readonly Func<CancellationToken, ValueTask<Stream>> _open;
     private readonly CancellationTokenSource _cts = new();
     private readonly Task _acceptLoop;
-    private readonly object _gate = new();
+    private readonly Gate _gate = new();
     private readonly HashSet<Task> _bridges = [];
     private int _disposed;
 

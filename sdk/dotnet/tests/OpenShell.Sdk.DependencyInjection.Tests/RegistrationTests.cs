@@ -5,7 +5,6 @@ using Grpc.Core;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using OpenShell.DependencyInjection;
 
 namespace OpenShell.DependencyInjection.Tests;
 

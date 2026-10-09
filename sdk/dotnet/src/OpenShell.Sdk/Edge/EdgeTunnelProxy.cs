@@ -116,17 +116,12 @@ public sealed partial class EdgeTunnelProxy : IAsyncDisposable, IDisposable
                 throw Invalid("gateway URL must use http, https, ws or wss");
         }
 
-        if (result.Scheme == "ws" && !IsLoopback(result))
+        return result switch
         {
-            throw Invalid("an edge token requires wss:// (ws:// is allowed only for loopback hosts)");
-        }
-
-        if (result.UserInfo.Length > 0)
-        {
-            throw Invalid("gateway URL must not contain credentials");
-        }
-
-        return result;
+            { Scheme: "ws" } when !IsLoopback(result) => throw Invalid("an edge token requires wss:// (ws:// is allowed only for loopback hosts)"),
+            { UserInfo.Length: > 0 } => throw Invalid("gateway URL must not contain credentials"),
+            _ => result,
+        };
     }
 
     /// <summary>Stops accepting, lets open connections finish for <see cref="EdgeTunnelOptions.CloseTimeout"/>, then cuts them.</summary>
@@ -142,7 +137,9 @@ public sealed partial class EdgeTunnelProxy : IAsyncDisposable, IDisposable
         await _acceptLoop.ConfigureAwait(false);
 
         var pending = Task.WhenAll(_connections.Keys);
-        var finished = await Task.WhenAny(pending, Task.Delay(_options.CloseTimeout)).ConfigureAwait(false);
+        using var timer = new CancellationTokenSource();
+        var finished = await Task.WhenAny(pending, Task.Delay(_options.CloseTimeout, timer.Token)).ConfigureAwait(false);
+        await timer.CancelAsync().ConfigureAwait(false);
         if (finished != pending)
         {
             if (_options.Logger is { } log)

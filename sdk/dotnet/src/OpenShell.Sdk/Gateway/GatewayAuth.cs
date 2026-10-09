@@ -12,7 +12,7 @@ namespace OpenShell.Gateway;
 /// </summary>
 internal sealed class LazyEdgeAuth(string directory) : IAuthProvider
 {
-    private readonly object _gate = new();
+    private readonly Gate _gate = new();
     private IAuthProvider? _inner;
 
     public bool SendsCredentials => true;
@@ -24,11 +24,7 @@ internal sealed class LazyEdgeAuth(string directory) : IAuthProvider
     {
         var primary = Path.Combine(directory, "edge_token");
         var legacy = Path.Combine(directory, "cf_token");
-        var path = File.Exists(primary) ? primary : File.Exists(legacy) ? legacy : null;
-        if (path is null)
-        {
-            throw new OpenShellException(OpenShellErrorKind.Auth, "neither edge_token nor cf_token found in gateway directory");
-        }
+        var path = (File.Exists(primary) ? primary : File.Exists(legacy) ? legacy : null) ?? throw new OpenShellException(OpenShellErrorKind.Auth, "neither edge_token nor cf_token found in gateway directory");
 
         string token;
         try

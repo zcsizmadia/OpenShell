@@ -27,13 +27,11 @@ public static partial class Auth
     public static IAuthProvider CloudflareAccess(string edgeToken, IAuthProvider? inner = null)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(edgeToken);
-        if (!EdgeTokenPattern().IsMatch(edgeToken))
-        {
-            throw new OpenShellException(
-                OpenShellErrorKind.InvalidConfig, "edge token must contain only cookie-safe JWT characters");
-        }
 
-        return new CloudflareAuthProvider(edgeToken, inner);
+        return EdgeTokenPattern().IsMatch(edgeToken)
+            ? new CloudflareAuthProvider(edgeToken, inner)
+            : throw new OpenShellException(
+                OpenShellErrorKind.InvalidConfig, "edge token must contain only cookie-safe JWT characters");
     }
 
     /// <summary>Adds fixed headers on top of another provider.</summary>

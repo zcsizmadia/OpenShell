@@ -104,12 +104,9 @@ public sealed class ExecInteractiveSession : IAsyncDisposable
     /// </summary>
     public IAsyncEnumerable<ExecEvent> ReadEventsAsync(CancellationToken cancellationToken = default)
     {
-        if (Interlocked.Exchange(ref _eventsStarted, 1) != 0)
-        {
-            throw new InvalidOperationException("the event stream can only be enumerated once");
-        }
-
-        return ReadEventsCoreAsync(cancellationToken);
+        return Interlocked.Exchange(ref _eventsStarted, 1) != 0
+            ? throw new InvalidOperationException("the event stream can only be enumerated once")
+            : ReadEventsCoreAsync(cancellationToken);
     }
 
     private async IAsyncEnumerable<ExecEvent> ReadEventsCoreAsync([EnumeratorCancellation] CancellationToken cancellationToken)

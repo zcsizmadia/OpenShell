@@ -51,16 +51,10 @@ public static class RootfsDriverConfig
         ArgumentException.ThrowIfNullOrWhiteSpace(stagingToken);
         ArgumentException.ThrowIfNullOrWhiteSpace(driver);
 
-        JsonObject root;
-        if (string.IsNullOrWhiteSpace(baseJson))
-        {
-            root = [];
-        }
-        else
-        {
-            root = JsonNode.Parse(baseJson) as JsonObject
+        JsonObject root = string.IsNullOrWhiteSpace(baseJson)
+            ? []
+            : JsonNode.Parse(baseJson) as JsonObject
                 ?? throw new OpenShellException(OpenShellErrorKind.InvalidArgument, "driver config must be a JSON object");
-        }
 
         if (!root.TryGetPropertyValue(driver, out var section) || section is null)
         {

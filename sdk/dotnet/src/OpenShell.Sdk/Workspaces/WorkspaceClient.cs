@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-using Openshell.Datamodel.V1;
 using Wire = Openshell.V1;
 
 namespace OpenShell;

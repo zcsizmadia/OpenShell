@@ -168,7 +168,8 @@ public static class OidcLogin
         var input = cfg.Options.KeyboardInput ?? Console.In;
         var output = cfg.Options.KeyboardOutput ?? Console.Error;
 
-        await output.WriteAsync($"{Environment.NewLine}Open the following URL in your browser to authenticate:{Environment.NewLine}{Environment.NewLine}  {url}{Environment.NewLine}{Environment.NewLine}Paste the authorization code here and press Enter: ").ConfigureAwait(false);
+        var prompt = $"{Environment.NewLine}Open the following URL in your browser to authenticate:{Environment.NewLine}{Environment.NewLine}  {url}{Environment.NewLine}{Environment.NewLine}Paste the authorization code here and press Enter: ";
+        await output.WriteAsync(prompt.AsMemory(), ct).ConfigureAwait(false);
         await output.FlushAsync(ct).ConfigureAwait(false);
 
         string? line;

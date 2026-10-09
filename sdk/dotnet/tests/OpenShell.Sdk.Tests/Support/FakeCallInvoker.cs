@@ -98,12 +98,9 @@ internal sealed class DuplexChannel<TReq, TResp> : IDisposable
 
         public Task WriteAsync(TReq message, CancellationToken cancellationToken)
         {
-            if (cancellationToken.IsCancellationRequested)
-            {
-                return Task.FromCanceled(cancellationToken);
-            }
-
-            return WriteAsync(message);
+            return cancellationToken.IsCancellationRequested
+                ? Task.FromCanceled(cancellationToken)
+                : WriteAsync(message);
         }
 
         public Task WriteAsync(TReq message)

@@ -159,9 +159,9 @@ public class FileUploadTests
         await client.Files.UploadAsync("sb", new MemoryStream("seekable"u8.ToArray()), "rel.txt", UnixFileMode.UserRead | UnixFileMode.UserExecute);
         await client.Files.UploadAsync("sb", new ForwardOnlyStream("forward"u8.ToArray()), "/f.txt");
 
-        var first = await ReadEntryAsync(archives[0]);
-        await Assert.That(first.Name).IsEqualTo("rel.txt");
-        await Assert.That(first.Mode).IsEqualTo(UnixFileMode.UserRead | UnixFileMode.UserExecute);
+        var (Name, Mode) = await ReadEntryAsync(archives[0]);
+        await Assert.That(Name).IsEqualTo("rel.txt");
+        await Assert.That(Mode).IsEqualTo(UnixFileMode.UserRead | UnixFileMode.UserExecute);
         var second = await Tar.ReadAsync(archives[1]);
         await Assert.That(second.Single()).IsEqualTo(("f.txt", "forward"));
         var starts = invoker.DuplexCalls.Count;
@@ -392,7 +392,7 @@ public class FileDownloadTests
         await Expect(await Tar.BuildAsync(Tar.Dir("d")), "/d", "directory");
         await Expect(await Tar.BuildAsync(Tar.File("other.txt", "x")), "/a.txt", "entry name");
         await Expect(await Tar.BuildAsync(Tar.File("a.txt", "x"), Tar.File("b.txt", "y")), "/a.txt", "unexpected tar entry");
-        await Expect(await Tar.BuildAsync((("a.txt"), null, TarEntryType.SymbolicLink, "/etc/passwd")), "/a.txt", "unexpected tar entry");
+        await Expect(await Tar.BuildAsync(("a.txt", null, TarEntryType.SymbolicLink, "/etc/passwd")), "/a.txt", "unexpected tar entry");
         await Expect(new byte[1024], "/a.txt", "no file");
     }
 

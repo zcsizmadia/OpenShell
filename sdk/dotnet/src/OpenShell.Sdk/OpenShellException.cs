@@ -47,7 +47,10 @@ public class OpenShellException : Exception
 {
     /// <summary>Creates an exception of the given kind.</summary>
     public OpenShellException(OpenShellErrorKind kind, string message, Exception? innerException = null)
-        : base(message, innerException) => Kind = kind;
+        : base(message, innerException)
+    {
+        Kind = kind;
+    }
 
     /// <summary>The error classification.</summary>
     public OpenShellErrorKind Kind { get; }

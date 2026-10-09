@@ -46,13 +46,22 @@ public abstract record SettingValue
     public static SettingValue FromBytes(ReadOnlySpan<byte> value) => new BytesSetting(value.ToArray());
 
     /// <summary>Implicit conversion from <see cref="string"/>.</summary>
-    public static implicit operator SettingValue(string value) => FromString(value);
+    public static implicit operator SettingValue(string value)
+    {
+        return FromString(value);
+    }
 
     /// <summary>Implicit conversion from <see cref="bool"/>.</summary>
-    public static implicit operator SettingValue(bool value) => FromBool(value);
+    public static implicit operator SettingValue(bool value)
+    {
+        return FromBool(value);
+    }
 
     /// <summary>Implicit conversion from <see cref="long"/>.</summary>
-    public static implicit operator SettingValue(long value) => FromInt(value);
+    public static implicit operator SettingValue(long value)
+    {
+        return FromInt(value);
+    }
 
     internal static SettingValue? FromWire(WireSandbox.SettingValue? wire) => wire?.ValueCase switch
     {

@@ -8,7 +8,7 @@
   <CodeCoverage>
     <ModulePaths>
       <Include>
-        <ModulePath>.*OpenShell\.Sdk\.dll$</ModulePath>
+        <ModulePath>.*OpenShell\.Sdk(\.DependencyInjection|\.Testing)?\.dll$</ModulePath>
       </Include>
     </ModulePaths>
     <Sources>

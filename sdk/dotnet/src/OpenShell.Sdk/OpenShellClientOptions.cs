@@ -49,6 +49,9 @@ public sealed record OpenShellClientOptions
     /// <summary>Optional logger factory.</summary>
     public ILoggerFactory? LoggerFactory { get; init; }
 
+    /// <summary>Throws <see cref="OpenShellException"/> (<see cref="OpenShellErrorKind.InvalidConfig"/>) when the options are inconsistent or unsafe, without connecting.</summary>
+    public void Validate() => Transport.ChannelFactory.Validate(this);
+
     /// <summary>Replaces the HTTP handler. Intended for tests and custom proxies; <see cref="Tls"/> is then ignored.</summary>
     public HttpMessageHandler? HttpHandler { get; init; }
 }

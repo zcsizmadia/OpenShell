@@ -1,8 +1,10 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/OpenShell.Sdk.DependencyInjection/OpenShell.Sdk.DependencyInjection.csproj" />
     <Project Path="src/OpenShell.Sdk/OpenShell.Sdk.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/OpenShell.Sdk.DependencyInjection.Tests/OpenShell.Sdk.DependencyInjection.Tests.csproj" />
     <Project Path="tests/OpenShell.Sdk.IntegrationTests/OpenShell.Sdk.IntegrationTests.csproj" />
     <Project Path="tests/OpenShell.Sdk.Tests/OpenShell.Sdk.Tests.csproj" />
   </Folder>

@@ -32,5 +32,6 @@
               ProtoRoot="..\..\..\..\proto" GrpcServices="Client" Access="Public" Link="Proto\%(Filename)%(Extension)" />
     <None Include="..\..\README.md" Pack="true" PackagePath="\" />
     <InternalsVisibleTo Include="$(InternalsVisibleToTests)" />
+    <InternalsVisibleTo Include="OpenShell.Sdk.DependencyInjection.Tests" />
   </ItemGroup>
 </Project>

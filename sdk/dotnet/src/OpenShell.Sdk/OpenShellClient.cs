@@ -26,6 +26,9 @@ public interface IOpenShellClient : IDisposable
     /// <summary>Reusable sandbox workload templates.</summary>
     ISandboxTemplateClient Templates { get; }
 
+    /// <summary>Local rootfs tar staging for drivers that boot from an archive.</summary>
+    IRootfsClient Rootfs { get; }
+
     /// <summary>Sandbox and gateway configuration.</summary>
     IConfigClient Config { get; }
 
@@ -61,6 +64,7 @@ public sealed class OpenShellClient : IOpenShellClient
         Exec = new ExecClient(core, workspace);
         Workspaces = new WorkspaceClient(core);
         Templates = new SandboxTemplateClient(core, workspace);
+        Rootfs = new RootfsClient(core, workspace);
         Config = new ConfigClient(core, workspace);
         Policy = new PolicyClient(core, workspace);
         Watch = new SandboxWatchClient(core, workspace);
@@ -83,6 +87,9 @@ public sealed class OpenShellClient : IOpenShellClient
 
     /// <inheritdoc />
     public ISandboxTemplateClient Templates { get; }
+
+    /// <inheritdoc />
+    public IRootfsClient Rootfs { get; }
 
     /// <inheritdoc />
     public IConfigClient Config { get; }

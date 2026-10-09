@@ -38,6 +38,12 @@ public interface IOpenShellClient : IDisposable
     /// <summary>Watch streams and logs.</summary>
     ISandboxWatchClient Watch { get; }
 
+    /// <summary>Providers, profiles and credential refresh.</summary>
+    IProviderClient Providers { get; }
+
+    /// <summary>Provider attachment and readiness for sandboxes.</summary>
+    ISandboxProviderClient SandboxProviders { get; }
+
     /// <summary>Returns a view of this client bound to another workspace; the connection is shared.</summary>
     IOpenShellClient InWorkspace(string workspace);
 }
@@ -68,6 +74,8 @@ public sealed class OpenShellClient : IOpenShellClient
         Config = new ConfigClient(core, workspace);
         Policy = new PolicyClient(core, workspace);
         Watch = new SandboxWatchClient(core, workspace);
+        Providers = new ProviderClient(core, workspace);
+        SandboxProviders = new SandboxProviderClient(core, workspace);
     }
 
     /// <inheritdoc />
@@ -99,6 +107,12 @@ public sealed class OpenShellClient : IOpenShellClient
 
     /// <inheritdoc />
     public ISandboxWatchClient Watch { get; }
+
+    /// <inheritdoc />
+    public IProviderClient Providers { get; }
+
+    /// <inheritdoc />
+    public ISandboxProviderClient SandboxProviders { get; }
 
     /// <summary>The generated gRPC client, for RPCs the curated surface does not cover yet.</summary>
     public GrpcService.OpenShellClient Raw => _core.Grpc;

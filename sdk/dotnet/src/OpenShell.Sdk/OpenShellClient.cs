@@ -44,6 +44,18 @@ public interface IOpenShellClient : IDisposable
     /// <summary>Provider attachment and readiness for sandboxes.</summary>
     ISandboxProviderClient SandboxProviders { get; }
 
+    /// <summary>Service exposure.</summary>
+    IServiceClient Services { get; }
+
+    /// <summary>SSH relay sessions and tunnels.</summary>
+    ISshClient Ssh { get; }
+
+    /// <summary>TCP forwarding to sandbox ports.</summary>
+    ITcpClient Tcp { get; }
+
+    /// <summary>File transfer.</summary>
+    IFileClient Files { get; }
+
     /// <summary>Returns a view of this client bound to another workspace; the connection is shared.</summary>
     IOpenShellClient InWorkspace(string workspace);
 }
@@ -76,6 +88,10 @@ public sealed class OpenShellClient : IOpenShellClient
         Watch = new SandboxWatchClient(core, workspace);
         Providers = new ProviderClient(core, workspace);
         SandboxProviders = new SandboxProviderClient(core, workspace);
+        Services = new ServiceClient(core, workspace);
+        Ssh = new SshClient(core, workspace, Sandboxes);
+        Tcp = new TcpForwardClient(core, workspace, Sandboxes, Ssh);
+        Files = new FileClient(Exec);
     }
 
     /// <inheritdoc />
@@ -113,6 +129,18 @@ public sealed class OpenShellClient : IOpenShellClient
 
     /// <inheritdoc />
     public ISandboxProviderClient SandboxProviders { get; }
+
+    /// <inheritdoc />
+    public IServiceClient Services { get; }
+
+    /// <inheritdoc />
+    public ISshClient Ssh { get; }
+
+    /// <inheritdoc />
+    public ITcpClient Tcp { get; }
+
+    /// <inheritdoc />
+    public IFileClient Files { get; }
 
     /// <summary>The generated gRPC client, for RPCs the curated surface does not cover yet.</summary>
     public GrpcService.OpenShellClient Raw => _core.Grpc;

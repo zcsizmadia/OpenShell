@@ -8,6 +8,7 @@
     <RootNamespace>OpenShell</RootNamespace>
     <AssemblyName>OpenShell.Sdk</AssemblyName>
     <PackageId>OpenShell.Sdk</PackageId>
+    <Authors>NVIDIA</Authors>
     <Description>.NET client for the OpenShell gateway.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAotCompatible>true</IsAotCompatible>

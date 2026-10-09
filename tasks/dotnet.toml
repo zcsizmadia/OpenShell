@@ -1,0 +1,112 @@
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# .NET SDK tasks (sdk/dotnet). Protobuf bindings are generated at build time
+# from the repository proto/ directory by Grpc.Tools, so there is no codegen
+# step and nothing generated is committed. The SDK targets net8.0 and net10.0;
+# the toolchain must provide both runtimes (CI installs them with
+# actions/setup-dotnet, see .github/workflows/branch-checks.yml).
+
+["sdk:dotnet:build"]
+description = "Build the .NET SDK for every target framework"
+dir = "sdk/dotnet"
+run = "dotnet build --nologo -c Release"
+
+["sdk:dotnet:format"]
+description = "Verify .NET SDK formatting and analyzer rules (read-only)"
+dir = "sdk/dotnet"
+run = "dotnet format --verify-no-changes --no-restore"
+
+# The TUnit test project is an executable, so the tasks run it directly with
+# `dotnet run` once per target framework. This avoids depending on the
+# `dotnet test` server protocol, which reports zero tests on some hosts, and a
+# framework that discovers no tests still fails the task (exit code 8 or 5).
+["sdk:dotnet:test"]
+description = "Run .NET SDK unit tests (TUnit, in-memory gRPC invoker) on net8.0 and net10.0"
+depends = ["sdk:dotnet:build"]
+dir = "sdk/dotnet"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+for tfm in net8.0 net10.0; do
+  echo "== tests on $tfm"
+  dotnet run --project tests/OpenShell.Sdk.Tests --no-build -c Release -f "$tfm"
+done
+"""
+
+["sdk:dotnet:coverage"]
+description = "Run .NET SDK unit tests with coverage for hand-written code and print the summary"
+depends = ["sdk:dotnet:build"]
+dir = "sdk/dotnet"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+OUT="$(pwd -P)/TestResults/coverage"
+rm -rf "$OUT"
+dotnet run --project tests/OpenShell.Sdk.Tests --no-build -c Release -f net10.0 -- \
+  --coverage --coverage-output-format cobertura \
+  --coverage-settings "$(pwd -P)/coverage.settings.xml" \
+  --coverage-output "$OUT/coverage.cobertura.xml"
+
+FILE=$(find "$OUT" -name '*.xml' | head -1)
+echo "line coverage:   $(grep -o '<coverage [^>]*' "$FILE" | grep -o 'line-rate="[0-9.]*"' | head -1 | grep -o '[0-9.]*')"
+echo "branch coverage: $(grep -o '<coverage [^>]*' "$FILE" | grep -o 'branch-rate="[0-9.]*"' | head -1 | grep -o '[0-9.]*')"
+"""
+
+# Pack the NuGet package into sdk/dotnet/artifacts. Set OPENSHELL_NUGET_VERSION
+# to stamp the version from the release tag. The npm-style version from
+# `release.py get-version --npm` (SemVer 2.0, X.Y.Z or X.Y.Z-dev.N.gSHA) is also
+# a valid NuGet version, so release and branch jobs reuse it.
+["sdk:dotnet:pack"]
+description = "Pack the .NET SDK NuGet package (set OPENSHELL_NUGET_VERSION to stamp the version)"
+dir = "sdk/dotnet"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+rm -rf artifacts
+VERSION_ARGS=()
+if [ -n "${OPENSHELL_NUGET_VERSION:-}" ]; then
+  VERSION_ARGS=("-p:Version=${OPENSHELL_NUGET_VERSION}")
+fi
+dotnet pack src/OpenShell.Sdk --nologo -c Release -o artifacts ${VERSION_ARGS[@]+"${VERSION_ARGS[@]}"}
+"""
+
+# Publish to the GitHub Packages NuGet feed of the NVIDIA organization. Auth is
+# the token in NUGET_AUTH_TOKEN (CI passes the workflow GITHUB_TOKEN). Set
+# OPENSHELL_NUGET_DRY_RUN=1 to build and validate the package without
+# uploading; CI uses this on pull requests, mirroring the npm --dry-run.
+["sdk:dotnet:publish"]
+description = "Publish the .NET SDK package to GitHub Packages (OPENSHELL_NUGET_DRY_RUN=1 skips the upload)"
+depends = ["sdk:dotnet:pack"]
+dir = "sdk/dotnet"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [ "${OPENSHELL_NUGET_DRY_RUN:-0}" = "1" ]; then
+  echo "Dry run: validated packages (not uploading):"
+  ls -1 artifacts/*.nupkg
+  exit 0
+fi
+
+: "${NUGET_AUTH_TOKEN:?NUGET_AUTH_TOKEN must be set to publish}"
+dotnet nuget push "artifacts/*.nupkg" \
+  --source "https://nuget.pkg.github.com/NVIDIA/index.json" \
+  --api-key "$NUGET_AUTH_TOKEN" \
+  --skip-duplicate
+"""
+hide = true
+
+["sdk:dotnet:ci"]
+description = ".NET SDK checks (format, build, tests on every framework, coverage summary, pack)"
+depends = [
+  "sdk:dotnet:format",
+  "sdk:dotnet:build",
+  "sdk:dotnet:test",
+  "sdk:dotnet:coverage",
+  "sdk:dotnet:pack",
+]
+hide = true

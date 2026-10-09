@@ -3,6 +3,7 @@
     <Project Path="src/OpenShell.Sdk/OpenShell.Sdk.csproj" />
   </Folder>
   <Folder Name="/tests/">
+    <Project Path="tests/OpenShell.Sdk.IntegrationTests/OpenShell.Sdk.IntegrationTests.csproj" />
     <Project Path="tests/OpenShell.Sdk.Tests/OpenShell.Sdk.Tests.csproj" />
   </Folder>
 </Solution>

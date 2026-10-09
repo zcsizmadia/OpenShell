@@ -1,0 +1,22 @@
+<Project>
+  <!--
+    SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+    SPDX-License-Identifier: Apache-2.0
+  -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <!-- NuGet metadata shared by every package under src/. -->
+  <PropertyGroup>
+    <Authors>NVIDIA</Authors>
+    <Company>NVIDIA</Company>
+    <Copyright>Copyright (c) 2026 NVIDIA CORPORATION &amp; AFFILIATES. All rights reserved.</Copyright>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/NVIDIA/OpenShell</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/NVIDIA/OpenShell</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="$(MSBuildThisFileDirectory)..\README.md" Pack="true" PackagePath="\" Visible="false" />
+  </ItemGroup>
+</Project>

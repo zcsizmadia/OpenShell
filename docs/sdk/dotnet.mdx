@@ -147,6 +147,44 @@ catch (OpenShellException e) when (e.IsTransient)
 }
 ```
 
+When the gateway attaches structured details, the exception exposes `ErrorInfo`,
+`FieldViolations`, and a suggested `RetryDelay`. The SDK retries reads that fail with
+`Unavailable` up to four times with backoff and never retries writes by default.
+Set `OpenShellClientOptions.Retry` to change this, or to `RetryPolicy.None` to
+turn retries off.
+
+## Register the Client with Dependency Injection
+
+Install `OpenShell.Sdk.DependencyInjection` to register a singleton
+`IOpenShellClient` and its per-area clients. The package validates the options at
+startup, so a bad address or an unreadable certificate fails when the host starts.
+
+```csharp
+services.AddOpenShell(configuration.GetSection("OpenShell"));
+
+services.AddOpenShellClient("prod")
+    .WithAddress("https://gateway.example.com")
+    .WithClientCredentials(
+        "https://idp.example.com/realms/openshell",
+        "openshell-service",
+        ct => ValueTask.FromResult(Environment.GetEnvironmentVariable("OPENSHELL_OIDC_CLIENT_SECRET")!),
+        "sandbox:read");
+```
+
+A name registers a keyed client. Resolve it with `[FromKeyedServices("prod")]` or
+from `IOpenShellClientFactory`.
+
+## Trace and Test
+
+Every call emits a client span and an `rpc.client.duration` measurement under the
+`OpenShell.Sdk` source and meter. Subscribe with `AddSource` and `AddMeter` on your
+OpenTelemetry providers. Nothing is recorded until a listener subscribes.
+
+Install `OpenShell.Sdk.Testing` to unit test code that takes an `IOpenShellClient`.
+`FakeOpenShellClient` is an in-memory gateway that returns the same error kinds as
+the real client. You script command results with `OnExec` and inject failures with
+`FailNext`.
+
 ## Use the Raw Client
 
 Use `OpenShellClient.Raw` for RPCs that the curated clients do not yet wrap. Raw

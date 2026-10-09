@@ -8,12 +8,8 @@
     <RootNamespace>OpenShell</RootNamespace>
     <AssemblyName>OpenShell.Sdk</AssemblyName>
     <PackageId>OpenShell.Sdk</PackageId>
-    <Authors>NVIDIA</Authors>
     <Description>.NET client for the OpenShell gateway.</Description>
     <IsAotCompatible>true</IsAotCompatible>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <PackageReadmeFile>README.md</PackageReadmeFile>
-    <RepositoryUrl>https://github.com/NVIDIA/OpenShell</RepositoryUrl>
     <InternalsVisibleToTests>OpenShell.Sdk.Tests</InternalsVisibleToTests>
   </PropertyGroup>
 
@@ -29,7 +25,6 @@
     <!-- Proto sources live in the repository root proto/ directory; bindings are generated at build time and never committed. -->
     <Protobuf Include="..\..\..\..\proto\openshell.proto;..\..\..\..\proto\sandbox.proto;..\..\..\..\proto\datamodel.proto;..\..\..\..\proto\options.proto"
               ProtoRoot="..\..\..\..\proto" GrpcServices="Client" Access="Public" Link="Proto\%(Filename)%(Extension)" />
-    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
     <InternalsVisibleTo Include="$(InternalsVisibleToTests)" />
     <InternalsVisibleTo Include="OpenShell.Sdk.DependencyInjection.Tests" />
     <InternalsVisibleTo Include="OpenShell.Sdk.Testing" />

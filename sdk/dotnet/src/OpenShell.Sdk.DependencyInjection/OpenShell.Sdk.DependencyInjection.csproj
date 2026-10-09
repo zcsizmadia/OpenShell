@@ -11,8 +11,6 @@
     <Description>Microsoft.Extensions.DependencyInjection, options, and health check integration for the OpenShell .NET SDK.</Description>
     <PackageTags>openshell;dependencyinjection;di;extensions</PackageTags>
     <IsAotCompatible>true</IsAotCompatible>
-    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-    <RepositoryUrl>https://github.com/NVIDIA/OpenShell</RepositoryUrl>
   </PropertyGroup>
 
   <ItemGroup>

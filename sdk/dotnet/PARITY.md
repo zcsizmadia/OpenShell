@@ -107,7 +107,7 @@ and has not run against a real gateway.
 
 | Feature | Status |
 |---|---|
-| `OpenShell.Sdk` NuGet package (net8.0, net10.0) | ✅ packs locally |
+| NuGet packages `OpenShell.Sdk`, `OpenShell.Sdk.DependencyInjection`, and `OpenShell.Sdk.Testing`, with shared metadata and README | ✅ all three pack locally |
 | `OpenShell.Sdk.DependencyInjection` (`AddOpenShell`, options binding, startup validation, keyed clients, factory, health check) | ✅ |
 | Fluent builder for the DI registration (`AddOpenShellClient`) | ✅ |
 | OpenTelemetry `ActivitySource` and `Meter` (`OpenShell.Sdk`, one client span and `rpc.client.duration` per RPC) | ✅ |

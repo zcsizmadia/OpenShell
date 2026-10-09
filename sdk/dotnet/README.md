@@ -143,7 +143,39 @@ using var client = GatewayClient.Connect();
 
 The SDK refuses to send credentials over plaintext `http://` to a non-loopback host and throws an `OpenShellException` with `OpenShellErrorKind.InvalidConfig`. Set `AllowInsecureAuth` only when you accept that the credential crosses the network in clear text. Edge tokens must use cookie-safe JWT characters. A client certificate must include its private key.
 
-For a gateway behind Cloudflare Access, `EdgeTunnelProxy.Start(gatewayUrl, edgeToken)` opens a local loopback proxy that tunnels connections over an authenticated WebSocket. Point `OpenShellClientOptions.Address` at `proxy.LocalUri`.
+### Gateways behind Cloudflare Access
+
+The edge authenticates only GET requests, so gRPC calls reach such a gateway through a WebSocket tunnel. `GatewayClient.Connect` does this for you when the registered gateway uses `cloudflare_jwt`: it starts a loopback proxy, points the client at it, and disposes the proxy with the client. Pass `EdgeTunnel = EdgeTunnelMode.Never` in `GatewayConnectOptions` to send the Access headers on direct gRPC calls instead, or supply your own `Auth` to opt out.
+
+Outside `GatewayClient`, start the proxy yourself and point the client at it:
+
+```csharp
+using OpenShell;
+using OpenShell.Edge;
+
+await using var proxy = EdgeTunnelProxy.Start("https://gateway.example.com", edgeToken);
+using var client = new OpenShellClient(new OpenShellClientOptions
+{
+    Address = proxy.LocalUri,
+    Auth = Auth.CloudflareAccess(edgeToken),
+});
+```
+
+## Retries
+
+Reads (`Get*`, `List*`, and `Health`) that fail with `Unavailable` are retried up to four times with exponential backoff and jitter. Writes are never retried by default, because a lost response could repeat a side effect. Retries stop at the call's deadline and when the caller cancels. Streaming calls are not retried; `Watch.WatchAsync` reconnects on its own.
+
+```csharp
+using OpenShell;
+
+var client = new OpenShellClient(new OpenShellClientOptions
+{
+    Address = new Uri("https://gateway.example.com"),
+    Retry = RetryPolicy.Default with { MaxAttempts = 6, MaxBackoff = TimeSpan.FromSeconds(10) },
+});
+```
+
+Use `RetryPolicy.None` to turn retries off. To retry a write you know is safe, for example one that carries a request id, widen `RetryPolicy.IsIdempotent`.
 
 ## Workspaces
 
@@ -183,6 +215,22 @@ catch (OpenShellException e) when (e.IsNotFound)
 ```
 
 Waits that exceed their timeout throw `OpenShellErrorKind.DeadlineExceeded`.
+
+When the gateway attaches structured details, the exception exposes them. `ErrorInfo` carries a stable `Reason`, a `Domain`, and metadata. `FieldViolations` lists the request fields that were rejected. `RetryDelay` is the delay the gateway suggested before trying again; it says nothing about whether repeating a mutation is safe. The SDK ignores details whose envelope does not match the call status, so a mismatched trailer cannot rewrite the error.
+
+```csharp
+try
+{
+    await client.Sandboxes.CreateAsync("Bad Name!", new SandboxSpec { Image = "img" });
+}
+catch (OpenShellException e) when (e.Kind == OpenShellErrorKind.InvalidArgument)
+{
+    foreach (var violation in e.FieldViolations)
+    {
+        Console.WriteLine($"{violation.Field}: {violation.Description}");
+    }
+}
+```
 
 ## Streaming exec, watch, and logs
 
@@ -243,9 +291,82 @@ var credentials = await operatorClient.Providers.GetCredentialsAsync(
 
 `OpenShellClient.Raw` exposes the generated gRPC client for RPCs the curated surface does not cover. Raw calls use protobuf wire types and do not map errors to `OpenShellException`.
 
+## Dependency injection
+
+The `OpenShell.Sdk.DependencyInjection` package registers a singleton `IOpenShellClient`, plus its per-area clients, with `Microsoft.Extensions.DependencyInjection`. Options are validated at startup, so a bad address, an unreadable certificate, or a token headed for plaintext HTTP fails when the host starts instead of on the first call.
+
+```csharp
+using Microsoft.Extensions.DependencyInjection;
+
+services.AddOpenShell(configuration.GetSection("OpenShell"));
+```
+
+```json
+{
+  "OpenShell": {
+    "Address": "https://gateway.example.com",
+    "Workspace": "team-a",
+    "CaCertificatePath": "/etc/openshell/ca.crt",
+    "ClientCertificatePath": "/etc/openshell/client.crt",
+    "ClientKeyPath": "/etc/openshell/client.key",
+    "DefaultTimeout": "00:00:30",
+    "Retry": { "MaxAttempts": 6 }
+  }
+}
+```
+
+Keep secrets such as `Token` in user secrets, environment variables, or a vault, not in the JSON file. `AddOpenShellClient` offers a fluent alternative, and a name registers a keyed client for each gateway:
+
+```csharp
+services.AddOpenShellClient("prod")
+    .WithAddress("https://gateway.example.com")
+    .WithClientCredentials(
+        "https://idp.example.com/realms/openshell",
+        "openshell-service",
+        ct => ValueTask.FromResult(Environment.GetEnvironmentVariable("OPENSHELL_OIDC_CLIENT_SECRET")!),
+        "sandbox:read",
+        "sandbox:write")
+    .WithRetry(retry => retry.MaxAttempts = 6);
+
+// Resolve it with [FromKeyedServices("prod")] IOpenShellClient client, or from the factory:
+var prod = provider.GetRequiredService<IOpenShellClientFactory>().Create("prod");
+```
+
+The builder also sets the workspace, bearer token, auth providers, CA and client certificates, timeout, and insecure-TLS and insecure-auth overrides. `services.AddHealthChecks().AddOpenShellHealthCheck()` adds an ASP.NET health check that calls the gateway health RPC. The OIDC provider is a container singleton, so the container disposes it.
+
+## Observability
+
+Every RPC emits one client span and one `rpc.client.duration` measurement, in seconds, using the OpenTelemetry gRPC conventions: the attributes `rpc.system`, `rpc.service`, `rpc.method`, and `rpc.grpc.status_code`. A retried call is a single span with its final outcome. Nothing is recorded or allocated until a listener subscribes, and request payloads, metadata, and credentials are never recorded. Subscribe by name:
+
+```csharp
+using OpenShell;
+
+builder.Services.AddOpenTelemetry()
+    .WithTracing(tracing => tracing.AddSource(OpenShellTelemetry.ActivitySourceName))
+    .WithMetrics(metrics => metrics.AddMeter(OpenShellTelemetry.MeterName));
+```
+
+Set `OpenShellClientOptions.LoggerFactory` to receive the SDK's own log events: retries, watch reconnects, and edge tunnel activity. The dependency injection package supplies the container's logger factory automatically.
+
 ## Testing
 
-An in-memory fake client for unit tests is coming in `OpenShell.Sdk.Testing`. Until then, program against `IOpenShellClient` and its per-area interfaces, such as `ISandboxClient`, to substitute your own test double.
+`OpenShell.Sdk.Testing` provides `FakeOpenShellClient`, an in-memory gateway that implements every `IOpenShellClient` area with the same error kinds as the real client. It keeps workspace-scoped state, paginates with real page tokens, advances sandbox phases on a `TimeProvider` you control, and streams watch events with cursors. Script command results, inject failures, and inspect the recorded calls through `Gateway`:
+
+```csharp
+using OpenShell;
+using OpenShell.Testing;
+
+using var fake = new FakeOpenShellClient();
+fake.Gateway.OnExec(call => call.CommandLine == "echo hi" ? FakeExecScript.Success("hi\n") : null);
+
+await fake.Sandboxes.CreateAsync("demo", new SandboxSpec { Image = "img" });
+var result = await fake.Exec.RunAsync("demo", ["echo", "hi"]);
+// result.StdoutText == "hi\n"
+
+fake.Gateway.FailNext("Sandboxes.Get", new OpenShellException(OpenShellErrorKind.Unavailable, "down"));
+```
+
+Write your own code against `IOpenShellClient` and its per-area interfaces, such as `ISandboxClient`, so tests can substitute the fake. `ListenAsync` on the fake records the listener without opening a socket, and provider credentials come back redacted from listings.
 
 ## Build from source
 

@@ -97,7 +97,10 @@ VERSION_ARGS=()
 if [ -n "${OPENSHELL_NUGET_VERSION:-}" ]; then
   VERSION_ARGS=("-p:Version=${OPENSHELL_NUGET_VERSION}")
 fi
-dotnet pack src/OpenShell.Sdk --nologo -c Release -o artifacts ${VERSION_ARGS[@]+"${VERSION_ARGS[@]}"}
+# Pack every package under src/: the client, the dependency injection integration, and the test fake.
+for project in OpenShell.Sdk OpenShell.Sdk.DependencyInjection OpenShell.Sdk.Testing; do
+  dotnet pack "src/$project" --nologo -c Release -o artifacts ${VERSION_ARGS[@]+"${VERSION_ARGS[@]}"}
+done
 """
 
 # Publish to the GitHub Packages NuGet feed of the NVIDIA organization. Auth is

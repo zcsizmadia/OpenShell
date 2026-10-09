@@ -99,7 +99,7 @@ dotnet_naming_style.underscore_camel.capitalization = camel_case
 
 # CA1708: the proto package `openshell.v1` generates the `Openshell` namespace, which differs from the
 # public `OpenShell` namespace only by case. The generated name is fixed by the proto package.
-[src/OpenShell.Sdk/**.cs]
+[src/OpenShell.Sdk*/**.cs]
 dotnet_diagnostic.CA1708.severity = none
 
 # Test code: sentence-style snake_case names and freely allocated test data.

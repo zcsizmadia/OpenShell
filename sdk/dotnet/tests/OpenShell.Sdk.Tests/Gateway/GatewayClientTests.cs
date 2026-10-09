@@ -16,7 +16,7 @@ public class GatewayClientTests
     private const string Idp = "https://idp.example.com";
     private static readonly DateTimeOffset Now = new(2026, 1, 1, 12, 0, 0, TimeSpan.Zero);
 
-    private static GatewayConfig Config(string directory, GatewayAuthMode mode = GatewayAuthMode.None, string endpoint = "https://gw.example.com", bool oidc = true) => new()
+    private static GatewayMetadata Config(string directory, GatewayAuthMode mode = GatewayAuthMode.None, string endpoint = "https://gw.example.com", bool oidc = true) => new()
     {
         Name = "gw",
         Endpoint = new Uri(endpoint),

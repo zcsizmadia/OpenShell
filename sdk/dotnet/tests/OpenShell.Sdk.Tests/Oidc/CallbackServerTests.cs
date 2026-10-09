@@ -193,7 +193,7 @@ public class OidcEdgeCaseTests
     [Test]
     public async Task Gateway_audience_and_empty_values_resolve_as_documented()
     {
-        var gateway = new GatewayConfig
+        var gateway = new GatewayMetadata
         {
             Name = "gw",
             Endpoint = new Uri("https://gw.example.com"),

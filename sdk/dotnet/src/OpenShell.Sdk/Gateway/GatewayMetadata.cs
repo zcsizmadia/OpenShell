@@ -33,7 +33,7 @@ public enum GatewayConfigSource
 }
 
 /// <summary>A registered gateway read from <c>metadata.json</c>.</summary>
-public sealed record GatewayConfig
+public sealed record GatewayMetadata
 {
     /// <summary>Gateway name (the registration directory name).</summary>
     public required string Name { get; init; }
@@ -64,4 +64,4 @@ public sealed record GatewayConfig
 }
 
 /// <summary>Summary of a registered gateway returned by <see cref="GatewayLocator.List"/>.</summary>
-public sealed record GatewayInfo(string Name, bool Active, GatewayConfigSource Source);
+public sealed record GatewayEntry(string Name, bool Active, GatewayConfigSource Source);

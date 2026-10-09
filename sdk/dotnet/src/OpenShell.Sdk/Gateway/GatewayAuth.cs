@@ -67,14 +67,14 @@ internal sealed class LazyEdgeAuth(string directory) : IAuthProvider
 /// </summary>
 internal sealed class DiskOidcAuth : IAuthProvider, IDisposable
 {
-    private readonly GatewayConfig _config;
+    private readonly GatewayMetadata _config;
     private readonly GatewayConnectOptions _options;
     private readonly RefreshableToken _token;
     private readonly TimeProvider _time;
     private string? _rejected;
     private string? _served;
 
-    public DiskOidcAuth(GatewayConfig config, GatewayConnectOptions options)
+    public DiskOidcAuth(GatewayMetadata config, GatewayConnectOptions options)
     {
         _config = config;
         _options = options;

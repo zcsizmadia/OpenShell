@@ -74,7 +74,7 @@ public sealed record OidcOptions
     public TimeProvider? TimeProvider { get; init; }
 
     /// <summary>A registered gateway supplying issuer, client, audience, scopes and the token directory.</summary>
-    public GatewayConfig? Gateway { get; init; }
+    public GatewayMetadata? Gateway { get; init; }
 
     /// <inheritdoc />
     public override string ToString() => "OidcOptions { ... }";

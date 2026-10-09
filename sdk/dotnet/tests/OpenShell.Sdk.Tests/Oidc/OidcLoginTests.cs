@@ -350,7 +350,7 @@ public class OidcLoginTests
     {
         using var dir = new TempDirectory();
         var handler = StubHandler.Provider(Issuer, _ => TokenOk());
-        var gateway = new GatewayConfig { Name = "gw", Endpoint = new Uri("https://gw.example.com"), Directory = dir.Path, OidcIssuer = Issuer, OidcClientId = "cli" };
+        var gateway = new GatewayMetadata { Name = "gw", Endpoint = new Uri("https://gw.example.com"), Directory = dir.Path, OidcIssuer = Issuer, OidcClientId = "cli" };
         var options = new OidcOptions
         {
             Gateway = gateway,

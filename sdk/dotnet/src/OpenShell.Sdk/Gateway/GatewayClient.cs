@@ -55,7 +55,7 @@ public static class GatewayClient
     }
 
     /// <summary>Derives client options (address, TLS, authentication) from a registration.</summary>
-    public static OpenShellClientOptions CreateOptions(GatewayConfig config, GatewayConnectOptions? options = null)
+    public static OpenShellClientOptions CreateOptions(GatewayMetadata config, GatewayConnectOptions? options = null)
     {
         ArgumentNullException.ThrowIfNull(config);
         options ??= new GatewayConnectOptions();
@@ -85,7 +85,7 @@ public static class GatewayClient
     /// Loads the mTLS bundle (<c>mtls/ca.crt</c>, <c>tls.crt</c>, <c>tls.key</c>), using the strongest trust profile available:
     /// full mTLS, CA-only, or system roots.
     /// </summary>
-    internal static TlsOptions LoadTls(GatewayConfig config)
+    internal static TlsOptions LoadTls(GatewayMetadata config)
     {
         var dir = Path.Combine(config.Directory, "mtls");
         var caPath = Path.Combine(dir, "ca.crt");

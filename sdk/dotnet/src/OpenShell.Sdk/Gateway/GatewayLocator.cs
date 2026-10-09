@@ -84,7 +84,7 @@ public sealed class GatewayLocator
             : OperatingSystem.IsWindows() ? null : "/etc/openshell";
 
     /// <summary>Loads a gateway by name; null selects the active gateway.</summary>
-    public GatewayConfig Load(string? name = null)
+    public GatewayMetadata Load(string? name = null)
     {
         name ??= ResolveActiveName();
         var (directory, source) = ResolveDirectory(name);
@@ -92,16 +92,16 @@ public sealed class GatewayLocator
     }
 
     /// <summary>Lists registered gateways, user registrations shadowing system ones.</summary>
-    public IReadOnlyList<GatewayInfo> List()
+    public IReadOnlyList<GatewayEntry> List()
     {
         var active = TryResolveActiveName();
         var seen = new HashSet<string>(StringComparer.Ordinal);
-        var result = new List<GatewayInfo>();
+        var result = new List<GatewayEntry>();
 
         foreach (var name in ListDirectories(UserConfigDirectory))
         {
             seen.Add(name);
-            result.Add(new GatewayInfo(name, name == active, GatewayConfigSource.User));
+            result.Add(new GatewayEntry(name, name == active, GatewayConfigSource.User));
         }
 
         if (SystemConfigDirectory is { } system)
@@ -110,7 +110,7 @@ public sealed class GatewayLocator
             {
                 if (seen.Add(name))
                 {
-                    result.Add(new GatewayInfo(name, name == active, GatewayConfigSource.System));
+                    result.Add(new GatewayEntry(name, name == active, GatewayConfigSource.System));
                 }
             }
         }
@@ -208,7 +208,7 @@ public sealed class GatewayLocator
         throw new OpenShellException(OpenShellErrorKind.NotFound, $"gateway '{name}' not found");
     }
 
-    private static GatewayConfig ParseMetadata(string name, string directory, GatewayConfigSource source)
+    private static GatewayMetadata ParseMetadata(string name, string directory, GatewayConfigSource source)
     {
         var path = Path.Combine(directory, MetadataFile);
         GatewayMetadataDto? meta;
@@ -235,7 +235,7 @@ public sealed class GatewayLocator
             throw Invalid($"gateway_endpoint for gateway '{name}' must be an absolute http:// or https:// URL");
         }
 
-        return new GatewayConfig
+        return new GatewayMetadata
         {
             Name = name,
             Endpoint = endpoint,

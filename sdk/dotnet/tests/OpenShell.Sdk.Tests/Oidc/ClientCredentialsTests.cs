@@ -261,7 +261,7 @@ public class ClientCredentialsTests
     public async Task Gateway_metadata_fills_missing_settings()
     {
         var handler = TokenServer(_ => Ok());
-        var gateway = new GatewayConfig
+        var gateway = new GatewayMetadata
         {
             Name = "gw",
             Endpoint = new Uri("https://gw.example.com"),

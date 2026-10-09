@@ -2,7 +2,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 TestResults/
+artifacts/
 *.user
 .vs/
 bin/
 obj/
+
+# The repository-wide `rootfs/` ignore rule also matches Rootfs/ on case-insensitive
+# file systems; the SDK source directory must stay tracked.
+!Rootfs/

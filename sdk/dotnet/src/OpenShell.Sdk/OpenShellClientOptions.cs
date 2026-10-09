@@ -43,6 +43,9 @@ public sealed record OpenShellClientOptions
     /// </summary>
     public bool AllowInsecureAuth { get; init; }
 
+    /// <summary>Retry behaviour for transient failures. Defaults to <see cref="RetryPolicy.Default"/>; use <see cref="RetryPolicy.None"/> to disable.</summary>
+    public RetryPolicy Retry { get; init; } = RetryPolicy.Default;
+
     /// <summary>Optional logger factory.</summary>
     public ILoggerFactory? LoggerFactory { get; init; }
 

@@ -164,12 +164,18 @@ public sealed class OpenShellClient : IOpenShellClient
     private static ClientCore Build(OpenShellClientOptions options)
     {
         var channel = Transport.ChannelFactory.Create(options);
-        return new ClientCore(options, channel, new GrpcService.OpenShellClient(channel));
+        Grpc.Core.CallInvoker invoker = channel.CreateCallInvoker();
+        if (options.Retry.IsEnabled)
+        {
+            invoker = new RetryCallInvoker(invoker, options.Retry, TimeProvider.System);
+        }
+
+        return new ClientCore(options, channel, new GrpcService.OpenShellClient(invoker));
     }
 
     /// <summary>Test seam: builds a client over a pre-built gRPC invoker.</summary>
-    internal static OpenShellClient ForTesting(OpenShellClientOptions options, Grpc.Core.CallInvoker invoker, TimeProvider? time = null) =>
-        new(new ClientCore(options, null, new GrpcService.OpenShellClient(invoker)) { Time = time ?? TimeProvider.System },
+    internal static OpenShellClient ForTesting(OpenShellClientOptions options, Grpc.Core.CallInvoker invoker, TimeProvider? time = null, bool useRetry = false) =>
+        new(new ClientCore(options, null, new GrpcService.OpenShellClient(useRetry ? new RetryCallInvoker(invoker, options.Retry, time ?? TimeProvider.System) : invoker)) { Time = time ?? TimeProvider.System },
             options.DefaultWorkspace,
             ownsCore: true);
 }

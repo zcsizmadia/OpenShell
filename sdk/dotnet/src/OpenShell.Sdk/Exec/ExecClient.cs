@@ -74,6 +74,12 @@ public interface IExecClient
     /// the stream without one, the enumeration throws, so a failing command cannot be missed.
     /// </summary>
     IAsyncEnumerable<ExecEvent> StreamAsync(string sandbox, IReadOnlyList<string> command, ExecOptions? options = null, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Starts a command with a TTY and a duplex channel: write stdin, resize the terminal, read output events.
+    /// Dispose the session to cancel the command.
+    /// </summary>
+    ValueTask<ExecInteractiveSession> InteractiveAsync(string sandbox, IReadOnlyList<string> command, uint columns, uint rows, ExecOptions? options = null, bool allocateTty = true, CancellationToken cancellationToken = default);
 }
 
 internal sealed class ExecClient(ClientCore core, string workspace) : IExecClient
@@ -115,26 +121,7 @@ internal sealed class ExecClient(ClientCore core, string workspace) : IExecClien
             throw new ArgumentException("command must not be empty", nameof(command));
         }
 
-        var request = new Wire.ExecSandboxRequest
-        {
-            WorkspaceScope = ClientCore.Scope(workspace),
-            Sandbox = sandbox,
-            Workdir = options?.WorkingDirectory ?? "",
-            Tty = options?.Tty ?? false,
-            NoLoginShell = options?.NoLoginShell ?? false,
-            RequestId = options?.RequestId ?? "",
-        };
-        request.Command.AddRange(command);
-        SandboxMapping.AddAll(request.Environment, options?.Environment);
-        if (options?.Timeout is { } timeout)
-        {
-            request.ExecutionTimeout = Duration.FromTimeSpan(timeout);
-        }
-
-        if (options is { Stdin.IsEmpty: false })
-        {
-            request.Stdin = UnsafeByteOperations.UnsafeWrap(options.Stdin);
-        }
+        var request = BuildRequest(workspace, sandbox, command, options);
 
         var sawExit = false;
         await foreach (var ev in core.StreamAsync(o => core.Grpc.ExecSandbox(request, o), cancellationToken).ConfigureAwait(false))
@@ -158,6 +145,55 @@ internal sealed class ExecClient(ClientCore core, string workspace) : IExecClien
         {
             throw new OpenShellException(OpenShellErrorKind.Unavailable, "exec stream ended without an exit event");
         }
+    }
+
+    public async ValueTask<ExecInteractiveSession> InteractiveAsync(
+        string sandbox,
+        IReadOnlyList<string> command,
+        uint columns,
+        uint rows,
+        ExecOptions? options = null,
+        bool allocateTty = true,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(sandbox);
+        ArgumentNullException.ThrowIfNull(command);
+        if (command.Count == 0)
+        {
+            throw new ArgumentException("command must not be empty", nameof(command));
+        }
+
+        var request = BuildRequest(workspace, sandbox, command, options);
+        request.Tty = allocateTty;
+        request.Cols = columns;
+        request.Rows = rows;
+        return await ExecInteractiveSession.StartAsync(core, request, cancellationToken).ConfigureAwait(false);
+    }
+
+    internal static Wire.ExecSandboxRequest BuildRequest(string workspace, string sandbox, IReadOnlyList<string> command, ExecOptions? options)
+    {
+        var request = new Wire.ExecSandboxRequest
+        {
+            WorkspaceScope = ClientCore.Scope(workspace),
+            Sandbox = sandbox,
+            Workdir = options?.WorkingDirectory ?? "",
+            Tty = options?.Tty ?? false,
+            NoLoginShell = options?.NoLoginShell ?? false,
+            RequestId = options?.RequestId ?? "",
+        };
+        request.Command.AddRange(command);
+        SandboxMapping.AddAll(request.Environment, options?.Environment);
+        if (options?.Timeout is { } timeout)
+        {
+            request.ExecutionTimeout = Duration.FromTimeSpan(timeout);
+        }
+
+        if (options is { Stdin.IsEmpty: false })
+        {
+            request.Stdin = UnsafeByteOperations.UnsafeWrap(options.Stdin);
+        }
+
+        return request;
     }
 
     private sealed class ArrayBufferWriter

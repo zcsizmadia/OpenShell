@@ -125,6 +125,9 @@ navigation:
   - page: "TypeScript"
     path: sdk/typescript.mdx
     slug: typescript
+  - page: ".NET"
+    path: sdk/dotnet.mdx
+    slug: dotnet
   - page: "API Errors"
     path: sdk/api-errors.mdx
   - page: "Protobuf Time Types"

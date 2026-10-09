@@ -1,0 +1,159 @@
+---
+# SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+title: ".NET SDK"
+sidebar-title: ".NET"
+description: "Install the OpenShell .NET SDK, connect to a gateway, and manage a sandbox."
+keywords: "OpenShell, SDK, .NET, C#, NuGet, gRPC, Sandbox"
+position: 5
+---
+
+Use the .NET SDK in C# applications, services, and automation. It provides an
+asynchronous, curated API for sandboxes, execution, providers, policy, and
+workspaces, and a raw generated gRPC client for the full gateway RPC surface.
+The package targets `net8.0` and `net10.0`. Use the SDK and gateway from the
+same OpenShell release when possible.
+
+## Install the SDK
+
+The package is distributed through the NVIDIA GitHub Packages NuGet feed. Add
+the feed to a `nuget.config` next to your solution:
+
+```xml
+<configuration>
+  <packageSources>
+    <add key="nvidia" value="https://nuget.pkg.github.com/NVIDIA/index.json" />
+  </packageSources>
+  <packageSourceCredentials>
+    <nvidia>
+      <add key="Username" value="YOUR_GITHUB_USER" />
+      <add key="ClearTextPassword" value="%GITHUB_TOKEN%" />
+    </nvidia>
+  </packageSourceCredentials>
+</configuration>
+```
+
+Authenticate with a GitHub token that has `read:packages`, then add the
+package:
+
+```shell
+dotnet add package OpenShell.Sdk
+```
+
+## Connect to a Gateway
+
+Create one `OpenShellClient` and reuse it. The client connects lazily, so call
+`Health.CheckAsync()` when startup must verify connectivity:
+
+```csharp
+using OpenShell;
+
+using var client = new OpenShellClient(new OpenShellClientOptions
+{
+    Address = new Uri("https://gateway.example.com"),
+    Auth = Auth.StaticToken(Environment.GetEnvironmentVariable("OPENSHELL_TOKEN")!),
+});
+
+var health = await client.Health.CheckAsync();
+Console.WriteLine($"{health.Status}: {health.Version}");
+```
+
+For long-running OIDC service automation, use the client-credentials provider.
+It retains credentials and tokens in memory and renews the access token before
+expiry:
+
+```csharp
+using OpenShell;
+using OpenShell.Oidc;
+
+using var auth = ClientCredentialsAuth.Create(new OidcOptions
+{
+    Issuer = "https://idp.example.com/realms/openshell",
+    ClientId = "openshell-service",
+    ClientSecretProvider = ct => ValueTask.FromResult(
+        Environment.GetEnvironmentVariable("OPENSHELL_OIDC_CLIENT_SECRET")!),
+    Audience = "openshell-gateway",
+});
+
+using var client = new OpenShellClient(new OpenShellClientOptions
+{
+    Address = new Uri("https://gateway.example.com"),
+    Auth = auth,
+});
+```
+
+The default local gateway requires mutual TLS. Pass the client certificate, and
+optionally a private CA, through `TlsOptions`. To reuse a gateway that the
+OpenShell CLI registered, call `GatewayClient.Connect()` from
+`OpenShell.Gateway`. It reads the gateway's authentication mode, mTLS bundle,
+and cached tokens from disk.
+
+The SDK refuses to send credentials over plaintext `http://` to a non-loopback
+host. Set `AllowInsecureAuth` only when you accept that the credential crosses
+the network in clear text.
+
+## Create and Use a Sandbox
+
+The client uses the `default` workspace unless you set
+`OpenShellClientOptions.DefaultWorkspace` or call `InWorkspace`:
+
+```csharp
+var sandbox = await client.Sandboxes.CreateAsync(
+    "sdk-example",
+    new SandboxSpec { Image = "registry.example.com/team/python-agent:1.0" });
+
+await client.Sandboxes.WaitReadyAsync(sandbox.Name, new WaitOptions { Timeout = TimeSpan.FromMinutes(2) });
+
+var result = await client.Exec.RunAsync(
+    sandbox.Name,
+    ["python", "-c", "print('hello from OpenShell')"]);
+Console.WriteLine(result.StdoutText);
+
+var deletion = await client.Sandboxes.DeleteAsync(sandbox.Name);
+if (deletion.Outcome == DeletionOutcome.Accepted)
+{
+    await client.Sandboxes.WaitDeletedAsync(
+        sandbox.Name,
+        new WaitOptions { ExpectedSandboxId = deletion.ResourceId });
+}
+```
+
+`DeleteAsync` returns a typed `DeletionResult`. `Accepted` means cleanup is
+pending. A missing target is an error unless you pass
+`new DeleteOptions { AllowMissing = true }`.
+
+`client.Exec` also supports streaming and interactive execution. `client.Tcp`,
+`client.Ssh`, `client.Services`, and `client.Files` cover port forwarding, SSH
+sessions, service exposure, and file transfer. File transfer uses tar over exec,
+so the sandbox image needs `tar` and `sh`.
+
+## Handle Errors and Paging
+
+Every operation throws `OpenShellException`. Switch on `Kind` or use shortcuts
+such as `IsNotFound` and `IsTransient`. List methods return a lazy `Pager<T>`
+that you enumerate with `await foreach`:
+
+```csharp
+try
+{
+    await foreach (var sandbox in client.Sandboxes.List(new ListOptions { PageSize = 50 }))
+    {
+        Console.WriteLine($"{sandbox.Name}: {sandbox.Phase}");
+    }
+}
+catch (OpenShellException e) when (e.IsTransient)
+{
+    // Retry later.
+}
+```
+
+## Use the Raw Client
+
+Use `OpenShellClient.Raw` for RPCs that the curated clients do not yet wrap. Raw
+calls return protobuf wire types and do not map errors to `OpenShellException`.
+
+## Next Steps
+
+- Review [Gateway Authentication](/how-it-works/gateways/authentication) for OIDC and service authentication.
+- Review [API Errors](/sdk/api-errors) for structured error handling.
+- See the [.NET SDK source documentation](https://github.com/NVIDIA/OpenShell/tree/main/sdk/dotnet) for providers, watch streams, policy, and workspace examples.

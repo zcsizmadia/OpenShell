@@ -832,7 +832,7 @@ jobs:
 
   publish-fern-docs:
     name: Sync and Publish Fern Docs
-    needs: [compute-versions, release, publish-sdk-typescript, release-helm, trigger-wheel-publish]
+    needs: [compute-versions, release, publish-sdk-typescript, publish-sdk-dotnet, release-helm, trigger-wheel-publish]
     if: needs.compute-versions.outputs.is_prerelease != 'true'
     permissions:
       contents: write
@@ -889,6 +889,51 @@ jobs:
           OPENSHELL_NPM_VERSION: ${{ needs.compute-versions.outputs.npm_version }}
           NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: mise run sdk:ts:publish
+
+  publish-sdk-dotnet:
+    name: Publish .NET SDK
+    needs: [compute-versions, release]
+    if: needs.compute-versions.outputs.is_prerelease != 'true'
+    runs-on: linux-amd64-cpu8
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: write
+    env:
+      DOTNET_NOLOGO: "1"
+      DOTNET_CLI_TELEMETRY_OPTOUT: "1"
+      DOTNET_SYSTEM_GLOBALIZATION_INVARIANT: "1"
+    container:
+      image: ghcr.io/nvidia/openshell/ci:9cb72baa2e61a1b5f12407e6e82da7fdba0aa722@sha256:67a9a0c32cb99825e6d3e9d9eec45d67149ea1ff7c11a1b1e1b3480d2d3df684
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          ref: ${{ needs.compute-versions.outputs.source_sha }}
+
+      - name: Mark workspace safe for git
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+      - name: Install tools
+        run: mise install --locked
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      # The release version (SemVer 2.0, shared with the npm package) is also a
+      # valid NuGet version. Publishes to the GitHub Packages NuGet feed.
+      - name: Publish
+        env:
+          OPENSHELL_NUGET_VERSION: ${{ needs.compute-versions.outputs.npm_version }}
+          NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: mise run sdk:dotnet:publish
 
   trigger-wheel-publish:
     name: Trigger Wheel Publish

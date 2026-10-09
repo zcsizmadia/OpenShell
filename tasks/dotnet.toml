@@ -29,10 +29,27 @@ run = """
 #!/usr/bin/env bash
 set -euo pipefail
 
-for tfm in net8.0 net10.0; do
-  echo "== tests on $tfm"
-  dotnet run --project tests/OpenShell.Sdk.Tests --no-build -c Release -f "$tfm"
+for project in OpenShell.Sdk.Tests OpenShell.Sdk.DependencyInjection.Tests; do
+  for tfm in net8.0 net10.0; do
+    echo "== $project on $tfm"
+    dotnet run --project "tests/$project" --no-build -c Release -f "$tfm"
+  done
 done
+"""
+
+# Runs against a real gateway; every test skips unless OPENSHELL_GATEWAY_ADDRESS
+# is set (see tests/OpenShell.Sdk.IntegrationTests/GatewayFixture.cs for the
+# optional token, CA, and mTLS variables). Not part of the CI task.
+["sdk:dotnet:test:integration"]
+description = "Run .NET SDK integration tests against the gateway in OPENSHELL_GATEWAY_ADDRESS"
+depends = ["sdk:dotnet:build"]
+dir = "sdk/dotnet"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+: "${OPENSHELL_GATEWAY_ADDRESS:?OPENSHELL_GATEWAY_ADDRESS must be set}"
+dotnet run --project tests/OpenShell.Sdk.IntegrationTests --no-build -c Release -f net10.0
 """
 
 ["sdk:dotnet:coverage"]
@@ -43,16 +60,19 @@ run = """
 #!/usr/bin/env bash
 set -euo pipefail
 
-OUT="$(pwd -P)/TestResults/coverage"
-rm -rf "$OUT"
-dotnet run --project tests/OpenShell.Sdk.Tests --no-build -c Release -f net10.0 -- \
-  --coverage --coverage-output-format cobertura \
-  --coverage-settings "$(pwd -P)/coverage.settings.xml" \
-  --coverage-output "$OUT/coverage.cobertura.xml"
+ROOT="$(pwd -P)/TestResults/coverage"
+rm -rf "$ROOT"
+for project in OpenShell.Sdk.Tests OpenShell.Sdk.DependencyInjection.Tests; do
+  OUT="$ROOT/$project"
+  dotnet run --project "tests/$project" --no-build -c Release -f net10.0 -- \
+    --coverage --coverage-output-format cobertura \
+    --coverage-settings "$(pwd -P)/coverage.settings.xml" \
+    --coverage-output "$OUT/coverage.cobertura.xml"
 
-FILE=$(find "$OUT" -name '*.xml' | head -1)
-echo "line coverage:   $(grep -o '<coverage [^>]*' "$FILE" | grep -o 'line-rate="[0-9.]*"' | head -1 | grep -o '[0-9.]*')"
-echo "branch coverage: $(grep -o '<coverage [^>]*' "$FILE" | grep -o 'branch-rate="[0-9.]*"' | head -1 | grep -o '[0-9.]*')"
+  FILE=$(find "$OUT" -name '*.xml' | head -1)
+  echo "$project line coverage:   $(grep -o '<coverage [^>]*' "$FILE" | grep -o 'line-rate="[0-9.]*"' | head -1 | grep -o '[0-9.]*')"
+  echo "$project branch coverage: $(grep -o '<coverage [^>]*' "$FILE" | grep -o 'branch-rate="[0-9.]*"' | head -1 | grep -o '[0-9.]*')"
+done
 """
 
 # Pack the NuGet package into sdk/dotnet/artifacts. Set OPENSHELL_NUGET_VERSION

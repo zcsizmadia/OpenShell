@@ -61,6 +61,7 @@ Do not rely on this file for a full inventory. The detailed public and contribut
 | `crates/openshell-vfio/` | VFIO support | PCI and GPU passthrough preparation and lifecycle |
 | `python/openshell/` | Python SDK | Python bindings and CLI packaging |
 | `sdk/typescript/` | TypeScript SDK | Native Connect client, curated sandbox API, and generated protobuf types |
+| `sdk/dotnet/` | .NET SDK | gRPC client for net8.0 and net10.0 with build-time protobuf codegen |
 | `proto/` | Protobuf definitions | gRPC service contracts |
 | `deploy/` | Docker, Helm, K8s | Dockerfiles, Helm chart, manifests |
 | `docs/` | Published docs | MDX pages, navigation, and content assets |
@@ -199,6 +200,13 @@ Follow the [branch naming convention in CONTRIBUTING.md](CONTRIBUTING.md#branch-
 - Generated files under `sdk/typescript/src/gen/` are build outputs and must not be committed.
 - Keep the curated API free of generated wire types; expose full generated messages and RPCs through `@nvidia/openshell-sdk/raw`.
 - The release workflow publishes the package to GitHub Packages. Branch checks exercise the publish path with `npm publish --dry-run`.
+
+## .NET SDK (`sdk/dotnet/`)
+
+- Run `mise run sdk:dotnet:ci` for the format check, build, TUnit tests with a coverage summary, and NuGet pack. The SDK targets `net8.0` and `net10.0`, so both runtimes must be installed.
+- Protobuf bindings are generated at build time from `proto/` by `Grpc.Tools`; there is no codegen step and nothing generated is committed.
+- Keep the curated API free of generated wire types where a domain type exists; expose the full generated client through `OpenShellClient.Raw`.
+- The release workflow publishes the package to GitHub Packages. Branch checks exercise the publish path with `OPENSHELL_NUGET_DRY_RUN=1`.
 
 ## Python
 

@@ -47,13 +47,33 @@ public class OpenShellException : Exception
 {
     /// <summary>Creates an exception of the given kind.</summary>
     public OpenShellException(OpenShellErrorKind kind, string message, Exception? innerException = null)
+        : this(kind, message, innerException, ErrorDetails.Empty)
+    {
+    }
+
+    private OpenShellException(OpenShellErrorKind kind, string message, Exception? innerException, ErrorDetails details)
         : base(message, innerException)
     {
         Kind = kind;
+        ErrorInfo = details.Info;
+        FieldViolations = details.FieldViolations;
+        RetryDelay = details.RetryDelay;
     }
 
     /// <summary>The error classification.</summary>
     public OpenShellErrorKind Kind { get; }
+
+    /// <summary>The server-provided reason, domain, and metadata, when the gateway sent them.</summary>
+    public ErrorInfo? ErrorInfo { get; }
+
+    /// <summary>The request fields the gateway rejected; empty when it sent none.</summary>
+    public IReadOnlyList<FieldViolation> FieldViolations { get; }
+
+    /// <summary>
+    /// The delay the gateway suggested before trying again. It says nothing about whether repeating a
+    /// mutation is safe; use a request id for that.
+    /// </summary>
+    public TimeSpan? RetryDelay { get; }
 
     /// <summary>The underlying gRPC status, when the error came from the gateway.</summary>
     public StatusCode? GrpcStatusCode => (InnerException as RpcException)?.StatusCode;
@@ -87,6 +107,6 @@ public class OpenShellException : Exception
             StatusCode.Internal or StatusCode.DataLoss => OpenShellErrorKind.Internal,
             _ => OpenShellErrorKind.Unknown,
         };
-        return new OpenShellException(kind, e.Status.Detail is { Length: > 0 } d ? d : e.Message, e);
+        return new OpenShellException(kind, e.Status.Detail is { Length: > 0 } d ? d : e.Message, e, ErrorDetails.From(e));
     }
 }

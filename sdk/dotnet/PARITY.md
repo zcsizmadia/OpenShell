@@ -49,7 +49,7 @@ and has not run against a real gateway.
 | Raw access | generated gRPC client on `OpenShellClient.Raw`; `SandboxSpec.RawSpec` hook | R T | ✅ |
 | Pagination | `Pager<T>` (items and pages), `ToListAsync` | G R T P | ✅ |
 | Errors | `OpenShellException` with kind, gRPC status, and predicates | G R T P | ✅ |
-| Error details | `ErrorInfo`, field violations, retry delay from `google.rpc` details | G R T P | ⬜ |
+| Error details | `ErrorInfo`, `FieldViolations`, `RetryDelay` decoded from `google.rpc` details, validated against the call status | G R T P | ✅ |
 
 ## Transport and auth
 

@@ -96,7 +96,8 @@ and has not run against a real gateway.
 | Feature | Seen in | Status |
 |---|---|---|
 | Interfaces for every client area, for mocking | G | ✅ |
-| In-memory fake client (`OpenShell.Sdk.Testing`) | G | 🚧 |
+| In-memory fake client (`OpenShell.Sdk.Testing`; 16 contract scenarios run against both the fake and the real client) | G | ✅ |
+| `AddOpenShellFake()` to swap the fake into a DI container | none | ⬜ |
 | Shared conformance fixtures consumed by tests (`sdk/conformance/*.json`) | G T P | ✅ |
 | Unit tests on an in-memory gRPC invoker, net8.0, net10.0 and net11.0 | G T P | ✅ |
 | Integration tests against a real gateway (`OPENSHELL_GATEWAY_ADDRESS`) | G | 🚧 written, skipped without a gateway, never run against a real one |

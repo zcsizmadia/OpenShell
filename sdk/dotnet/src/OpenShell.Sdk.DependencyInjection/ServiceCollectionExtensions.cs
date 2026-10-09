@@ -56,7 +56,7 @@ public static class OpenShellServiceCollectionExtensions
         return services;
     }
 
-    private static void AddCore(IServiceCollection services, string name)
+    internal static void AddCore(IServiceCollection services, string name)
     {
         ArgumentNullException.ThrowIfNull(services);
         ArgumentNullException.ThrowIfNull(name);

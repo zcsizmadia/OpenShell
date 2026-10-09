@@ -9,7 +9,7 @@ Target: the union of the Go, Rust, TypeScript, and Python SDK surfaces. Go is th
 shape follows it, with additions from the other three. Statuses were checked against the code, not carried
 over from the plan.
 
-Legend: ✅ done, 🚧 in progress or written but not yet verified end to end, ⬜ todo.
+Legend: ✅ done, 🚧 in progress, ⚠️ implemented with a limitation or not yet verified end to end, ⬜ todo.
 Sources: G Go, R Rust, T TypeScript, P Python.
 
 ## Gateway API coverage
@@ -35,7 +35,7 @@ and has not run against a real gateway.
 | Sandbox providers | attach, detach, list, status, readiness waits (`WaitAsync`, `WaitAllAsync`) | G R T | ✅ |
 | Templates | create, get, list, delete | G R T P | ✅ |
 | Exec | `RunAsync`, `StreamAsync`, `InteractiveAsync` (stdin, resize, cancel), `ExecPythonAsync` | G R T P | ✅ |
-| Files | upload and download for files, streams, and directories (tar over exec) | G | ✅ |
+| Files | upload and download for files, streams, and directories (tar over exec) | G | ⚠️ needs `tar` and `sh` in the sandbox image; not run against a real sandbox |
 | Services | expose, get, list, delete, service exposures at create | G R T P | ✅ |
 | SSH | create and revoke session, `TunnelAsync` | G T | ✅ |
 | TCP | `ForwardAsync` (duplex stream), `ListenAsync` (local listener) | G T | ✅ |
@@ -64,10 +64,10 @@ and has not run against a real gateway.
 | Extra headers wrapper | G | ✅ |
 | Cloudflare Access header and cookie auth | G R T | ✅ |
 | Edge WebSocket tunnel proxy (`EdgeTunnelProxy`) | G R | ✅ |
-| Edge tunnel started automatically for `cloudflare_jwt` gateways (`EdgeTunnelMode.Auto`, owned by the client) | R | ✅ |
+| Edge tunnel started automatically for `cloudflare_jwt` gateways (`EdgeTunnelMode.Auto`, owned by the client) | R | ⚠️ tested against a fake WebSocket edge, not a real Cloudflare Access edge |
 | Refusal to send credentials over plaintext to a non-loopback host | T | ✅ |
 | Retry policy (reads only by default, backoff with jitter, deadline aware) | G | ✅ |
-| Logger option (`ILoggerFactory`) | G | 🚧 accepted and passed to the gRPC channel; the SDK itself logs little |
+| Logger option (`ILoggerFactory`) | G | ⚠️ the gRPC channel, edge tunnel, retries, and watch reconnects log; waits and token refresh do not |
 | Per-call deadline and cancellation | all | ✅ |
 
 ## OIDC (`OpenShell.Oidc`)
@@ -77,8 +77,8 @@ and has not run against a real gateway.
 | Discovery and issuer validation | G R T P | ✅ |
 | Client credentials | G T P | ✅ |
 | Refresh-token exchange | G R P | ✅ |
-| Authorization code with PKCE, loopback callback, browser launch | G | ✅ |
-| Device-code flow | G | ✅ |
+| Authorization code with PKCE, loopback callback, browser launch | G | ⚠️ tested against a stub identity provider |
+| Device-code flow | G | ⚠️ tested against a stub identity provider |
 | Keyboard (paste) flow | G | ✅ |
 | Token cache, in-memory or on disk | G | ✅ |
 
@@ -100,7 +100,7 @@ and has not run against a real gateway.
 | `AddOpenShellFake()` to swap the fake into a DI container | none | ⬜ |
 | Shared conformance fixtures consumed by tests (`sdk/conformance/*.json`) | G T P | ✅ |
 | Unit tests on an in-memory gRPC invoker, net8.0, net10.0 and net11.0 | G T P | ✅ |
-| Integration tests against a real gateway (`OPENSHELL_GATEWAY_ADDRESS`) | G | 🚧 written, skipped without a gateway, never run against a real one |
+| Integration tests against a real gateway (`OPENSHELL_GATEWAY_ADDRESS`) | G | ⚠️ written, skipped without a gateway, never run against a real one |
 | Testcontainers fixture for a one-command local gateway | none | ⬜ |
 
 ## Packaging, docs, and CI
@@ -109,10 +109,10 @@ and has not run against a real gateway.
 |---|---|
 | `OpenShell.Sdk` NuGet package (net8.0, net10.0) | ✅ packs locally |
 | `OpenShell.Sdk.DependencyInjection` (`AddOpenShell`, options binding, startup validation, keyed clients, factory, health check) | ✅ |
-| Fluent builder for the DI registration | ⬜ |
-| OpenTelemetry `ActivitySource` and `Meter` | ⬜ |
+| Fluent builder for the DI registration (`AddOpenShellClient`) | ✅ |
+| OpenTelemetry `ActivitySource` and `Meter` (`OpenShell.Sdk`, one client span and `rpc.client.duration` per RPC) | ✅ |
 | README and published docs page | ✅ |
-| `tasks/dotnet.toml`, `sdk-dotnet` branch job, NuGet publish job | 🚧 written; no workflow has run in CI |
+| `tasks/dotnet.toml`, `sdk-dotnet` branch job, NuGet publish job | ⚠️ written; no workflow has run in CI |
 | .NET SDK in the CI image | ⬜ the job installs it with `actions/setup-dotnet` instead |
 | Editorconfig with analyzer severities and SPDX header enforcement | ✅ |
 

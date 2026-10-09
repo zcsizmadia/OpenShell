@@ -161,7 +161,11 @@ public sealed class OpenShellClient : IOpenShellClient
         }
     }
 
-    private static ClientCore Build(OpenShellClientOptions options)
+    /// <summary>Creates a client that disposes <paramref name="resource"/> together with its connection.</summary>
+    internal static OpenShellClient CreateOwning(OpenShellClientOptions options, IDisposable resource) =>
+        new(Build(options, resource), options.DefaultWorkspace, ownsCore: true);
+
+    private static ClientCore Build(OpenShellClientOptions options, IDisposable? resource = null)
     {
         var channel = Transport.ChannelFactory.Create(options);
         Grpc.Core.CallInvoker invoker = channel.CreateCallInvoker();
@@ -170,7 +174,7 @@ public sealed class OpenShellClient : IOpenShellClient
             invoker = new RetryCallInvoker(invoker, options.Retry, TimeProvider.System);
         }
 
-        return new ClientCore(options, channel, new GrpcService.OpenShellClient(invoker));
+        return new ClientCore(options, channel, new GrpcService.OpenShellClient(invoker)) { OwnedResource = resource };
     }
 
     /// <summary>Test seam: builds a client over a pre-built gRPC invoker.</summary>

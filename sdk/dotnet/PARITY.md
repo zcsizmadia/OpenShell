@@ -64,7 +64,7 @@ and has not run against a real gateway.
 | Extra headers wrapper | G | ✅ |
 | Cloudflare Access header and cookie auth | G R T | ✅ |
 | Edge WebSocket tunnel proxy (`EdgeTunnelProxy`) | G R | ✅ |
-| Edge tunnel started automatically for `cloudflare_jwt` gateways | G | ⬜ |
+| Edge tunnel started automatically for `cloudflare_jwt` gateways (`EdgeTunnelMode.Auto`, owned by the client) | R | ✅ |
 | Refusal to send credentials over plaintext to a non-loopback host | T | ✅ |
 | Retry policy (reads only by default, backoff with jitter, deadline aware) | G | ✅ |
 | Logger option (`ILoggerFactory`) | G | 🚧 accepted and passed to the gRPC channel; the SDK itself logs little |

@@ -28,6 +28,9 @@ internal sealed class ClientCore : IDisposable
 
     public TimeProvider Time { get; init; } = TimeProvider.System;
 
+    /// <summary>A resource whose lifetime follows the client, such as an edge tunnel proxy.</summary>
+    public IDisposable? OwnedResource { get; init; }
+
     public bool IsDisposed => Volatile.Read(ref _disposed) != 0;
 
     public CallOptions CallOptions(CancellationToken cancellationToken, TimeSpan? timeout = null)
@@ -122,6 +125,7 @@ internal sealed class ClientCore : IDisposable
         if (Interlocked.Exchange(ref _disposed, 1) == 0)
         {
             _channel?.Dispose();
+            OwnedResource?.Dispose();
         }
     }
 }

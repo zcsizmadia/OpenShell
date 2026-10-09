@@ -3,8 +3,19 @@
 
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.Extensions.Logging;
+using OpenShell.Edge;
 
 namespace OpenShell.Gateway;
+
+/// <summary>How <see cref="GatewayClient"/> reaches a gateway fronted by Cloudflare Access.</summary>
+public enum EdgeTunnelMode
+{
+    /// <summary>Start a local WebSocket tunnel for <c>cloudflare_jwt</c> gateways; connect directly for every other auth mode.</summary>
+    Auto,
+
+    /// <summary>Never tunnel; send the Access credentials as headers on direct gRPC calls.</summary>
+    Never,
+}
 
 /// <summary>Settings for <see cref="GatewayClient"/>.</summary>
 public sealed record GatewayConnectOptions
@@ -36,6 +47,15 @@ public sealed record GatewayConnectOptions
     /// <summary>Clock for token expiry.</summary>
     public TimeProvider? TimeProvider { get; init; }
 
+    /// <summary>
+    /// How to reach a Cloudflare Access gateway. <see cref="EdgeTunnelMode.Auto"/> (the default) routes gRPC through a
+    /// local WebSocket tunnel, because the edge authenticates only GET requests.
+    /// </summary>
+    public EdgeTunnelMode EdgeTunnel { get; init; } = EdgeTunnelMode.Auto;
+
+    /// <summary>Settings for the edge tunnel when one is started.</summary>
+    public EdgeTunnelOptions? EdgeTunnelOptions { get; init; }
+
     /// <summary>Optional logger factory.</summary>
     public ILoggerFactory? LoggerFactory { get; init; }
 
@@ -51,8 +71,38 @@ public static class GatewayClient
     {
         options ??= new GatewayConnectOptions();
         var config = (options.Locator ?? new GatewayLocator()).Load(name);
-        return new OpenShellClient(CreateOptions(config, options));
+        return ConnectCore(config, options).Client;
     }
+
+    /// <summary>Builds the client for a loaded registration, returning the edge tunnel it owns when one was started.</summary>
+    internal static (OpenShellClient Client, EdgeTunnelProxy? Tunnel) ConnectCore(GatewayMetadata config, GatewayConnectOptions options)
+    {
+        var clientOptions = CreateOptions(config, options);
+        if (!UsesEdgeTunnel(config, options))
+        {
+            return (new OpenShellClient(clientOptions), null);
+        }
+
+        var proxy = EdgeTunnelProxy.Start(
+            config.Endpoint.ToString(),
+            LazyEdgeAuth.ReadToken(config.Directory),
+            options.EdgeTunnelOptions ?? new EdgeTunnelOptions { Logger = options.LoggerFactory?.CreateLogger<EdgeTunnelProxy>() });
+        try
+        {
+            // The tunnel carries plaintext gRPC to loopback; the edge terminates TLS on the far side.
+            return (OpenShellClient.CreateOwning(clientOptions with { Address = proxy.LocalUri, Tls = null }, proxy), proxy);
+        }
+        catch
+        {
+            proxy.Dispose();
+            throw;
+        }
+    }
+
+    internal static bool UsesEdgeTunnel(GatewayMetadata config, GatewayConnectOptions options) =>
+        options.EdgeTunnel == EdgeTunnelMode.Auto
+        && config.AuthMode == GatewayAuthMode.CloudflareJwt
+        && options.Auth is null;
 
     /// <summary>Derives client options (address, TLS, authentication) from a registration.</summary>
     public static OpenShellClientOptions CreateOptions(GatewayMetadata config, GatewayConnectOptions? options = null)

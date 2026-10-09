@@ -29,8 +29,10 @@ run = """
 #!/usr/bin/env bash
 set -euo pipefail
 
+# The framework list lives in sdk/dotnet/Directory.Build.props (OpenShellSdkTargetFrameworks).
+IFS=';' read -r -a TFMS <<< "$(dotnet msbuild src/OpenShell.Sdk -getProperty:OpenShellSdkTargetFrameworks -nologo)"
 for project in OpenShell.Sdk.Tests OpenShell.Sdk.DependencyInjection.Tests; do
-  for tfm in net8.0 net10.0; do
+  for tfm in "${TFMS[@]}"; do
     echo "== $project on $tfm"
     dotnet run --project "tests/$project" --no-build -c Release -f "$tfm"
   done
@@ -49,7 +51,8 @@ run = """
 set -euo pipefail
 
 : "${OPENSHELL_GATEWAY_ADDRESS:?OPENSHELL_GATEWAY_ADDRESS must be set}"
-dotnet run --project tests/OpenShell.Sdk.IntegrationTests --no-build -c Release -f net10.0
+IFS=';' read -r -a TFMS <<< "$(dotnet msbuild src/OpenShell.Sdk -getProperty:OpenShellSdkTargetFrameworks -nologo)"
+dotnet run --project tests/OpenShell.Sdk.IntegrationTests --no-build -c Release -f "${TFMS[${#TFMS[@]}-1]}"
 """
 
 ["sdk:dotnet:coverage"]
@@ -62,9 +65,12 @@ set -euo pipefail
 
 ROOT="$(pwd -P)/TestResults/coverage"
 rm -rf "$ROOT"
+# Coverage runs on the newest framework in OpenShellSdkTargetFrameworks (Directory.Build.props).
+IFS=';' read -r -a TFMS <<< "$(dotnet msbuild src/OpenShell.Sdk -getProperty:OpenShellSdkTargetFrameworks -nologo)"
+LATEST="${TFMS[${#TFMS[@]}-1]}"
 for project in OpenShell.Sdk.Tests OpenShell.Sdk.DependencyInjection.Tests; do
   OUT="$ROOT/$project"
-  dotnet run --project "tests/$project" --no-build -c Release -f net10.0 -- \
+  dotnet run --project "tests/$project" --no-build -c Release -f "$LATEST" -- \
     --coverage --coverage-output-format cobertura \
     --coverage-settings "$(pwd -P)/coverage.settings.xml" \
     --coverage-output "$OUT/coverage.cobertura.xml"

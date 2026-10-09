@@ -4,7 +4,7 @@
     SPDX-License-Identifier: Apache-2.0
   -->
   <PropertyGroup>
-    <TargetFrameworks>net8.0;net10.0</TargetFrameworks>
+    <TargetFrameworks>$(OpenShellSdkTargetFrameworks)</TargetFrameworks>
     <RootNamespace>OpenShell</RootNamespace>
     <AssemblyName>OpenShell.Sdk</AssemblyName>
     <PackageId>OpenShell.Sdk</PackageId>
@@ -12,8 +12,6 @@
     <Description>.NET client for the OpenShell gateway.</Description>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <IsAotCompatible>true</IsAotCompatible>
-    <!-- CA1708: the proto package `openshell.v1` generates the `Openshell` namespace, which differs from the public `OpenShell` namespace only by case. -->
-    <NoWarn>$(NoWarn);CA1708</NoWarn>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <PackageReadmeFile>README.md</PackageReadmeFile>
     <RepositoryUrl>https://github.com/NVIDIA/OpenShell</RepositoryUrl>

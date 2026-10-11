@@ -137,6 +137,48 @@ public class OidcTokenFileTests
     }
 
     [Test]
+    public async Task Write_waits_out_a_briefly_locked_token_file()
+    {
+        // Windows only: a rename over an open file succeeds on Unix, so there is nothing to wait out.
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        using var dir = new TempDirectory();
+        var time = new FakeTimeProvider(Now);
+        OidcTokenFile.Write(dir.Path, new OidcTokens("one"), time);
+        var released = FileLocks.HoldExclusively(dir.Combine("oidc_token.json"), TimeSpan.FromMilliseconds(150));
+
+        OidcTokenFile.Write(dir.Path, new OidcTokens("two"), time);
+        await released;
+
+        await Assert.That(OidcTokenFile.ReadRaw(dir.Path)!.AccessToken).IsEqualTo("two");
+        await Assert.That(Directory.GetFiles(dir.Path).Length).IsEqualTo(1);
+    }
+
+    [Test]
+    public async Task Write_gives_up_on_a_token_file_that_stays_locked()
+    {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        using var dir = new TempDirectory();
+        var time = new FakeTimeProvider(Now);
+        OidcTokenFile.Write(dir.Path, new OidcTokens("one"), time);
+        var released = FileLocks.HoldExclusively(dir.Combine("oidc_token.json"), TimeSpan.FromSeconds(5));
+
+        var ex = await Assert.That(() => OidcTokenFile.Write(dir.Path, new OidcTokens("two"), time)).Throws<OidcException>();
+        await released;
+
+        await Assert.That(ex!.Failure).IsEqualTo(OidcFailure.TokenPersist);
+        await Assert.That(OidcTokenFile.ReadRaw(dir.Path)!.AccessToken).IsEqualTo("one");
+        await Assert.That(Directory.GetFiles(dir.Path).Length).IsEqualTo(1);
+    }
+
+    [Test]
     public async Task Files_are_owner_only_on_unix()
     {
         if (OperatingSystem.IsWindows())

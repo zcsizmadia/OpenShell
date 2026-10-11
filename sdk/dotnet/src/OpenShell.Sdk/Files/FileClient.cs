@@ -148,7 +148,7 @@ internal sealed class FileClient(IExecClient exec) : IFileClient
                 await DownloadAsync(sandbox, remotePath, file, cancellationToken).ConfigureAwait(false);
             }
 
-            File.Move(temp, fullPath, overwrite: true);
+            AtomicFile.Replace(temp, fullPath);
         }
         finally
         {

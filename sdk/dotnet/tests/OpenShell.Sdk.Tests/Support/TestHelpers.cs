@@ -116,3 +116,20 @@ internal static class TimeExtensions
         }
     }
 }
+
+internal static class FileLocks
+{
+    /// <summary>
+    /// Opens <paramref name="path"/> with no sharing, the way antivirus briefly holds a file it is scanning,
+    /// and releases it after <paramref name="hold"/>. The returned task completes once the handle is closed.
+    /// </summary>
+    public static Task HoldExclusively(string path, TimeSpan hold)
+    {
+        var handle = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
+        return Task.Run(async () =>
+        {
+            await Task.Delay(hold);
+            await handle.DisposeAsync();
+        });
+    }
+}

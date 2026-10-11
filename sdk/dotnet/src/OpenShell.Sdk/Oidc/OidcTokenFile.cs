@@ -104,7 +104,7 @@ internal static class OidcTokenFile
                 stream.Flush(flushToDisk: true);
             }
 
-            File.Move(temp, path, overwrite: true);
+            AtomicFile.Replace(temp, path);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

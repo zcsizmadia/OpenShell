@@ -356,6 +356,35 @@ public class FileDownloadTests
     }
 
     [Test]
+    public async Task Download_waits_out_a_briefly_locked_destination()
+    {
+        // Windows only: a rename over an open file succeeds on Unix, so there is nothing to wait out.
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
+        var target = TempPath();
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        await File.WriteAllTextAsync(target, "old");
+        try
+        {
+            var released = FileLocks.HoldExclusively(target, TimeSpan.FromMilliseconds(150));
+            var client = ClientTests.NewClient(Tar.DownloadSource(await Tar.BuildAsync(Tar.File("a.txt", "new"))));
+
+            await client.Files.DownloadAsync("sb", "/a.txt", target);
+            await released;
+
+            await Assert.That(await File.ReadAllTextAsync(target)).IsEqualTo("new");
+            await Assert.That(Directory.GetFiles(Path.GetDirectoryName(target)!).Length).IsEqualTo(1);
+        }
+        finally
+        {
+            Directory.Delete(Path.GetDirectoryName(target)!, recursive: true);
+        }
+    }
+
+    [Test]
     public async Task Download_into_a_stream_copies_the_content()
     {
         var invoker = Tar.DownloadSource(await Tar.BuildAsync(Tar.File("n.bin", "bytes")));

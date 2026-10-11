@@ -42,7 +42,8 @@ internal sealed class ClientCore : IDisposable
     {
         var effective = timeout ?? Options.DefaultTimeout;
         return new CallOptions(
-            deadline: effective is { } t ? DateTime.UtcNow + t : null,
+            // Same clock the retry invoker checks the deadline against.
+            deadline: effective is { } t ? Time.GetUtcNow().UtcDateTime + t : null,
             cancellationToken: cancellationToken);
     }
 

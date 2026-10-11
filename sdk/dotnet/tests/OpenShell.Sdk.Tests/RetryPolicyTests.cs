@@ -141,12 +141,15 @@ public class RetryPolicyTests
     [Test]
     public async Task Stops_retrying_when_the_caller_deadline_would_pass()
     {
-        var time = new FakeTimeProvider(DateTimeOffset.UtcNow);
+        // A fake clock far from the wall clock: the deadline must come from this clock, not DateTime.UtcNow.
+        // Mixing the two once made this test retry into a fake-time backoff that nothing advanced, hanging the run.
+        var time = new FakeTimeProvider(new DateTimeOffset(2000, 1, 1, 0, 0, 0, TimeSpan.Zero));
         var invoker = new FakeCallInvoker().Throws<Wire.HealthRequest, Wire.HealthResponse>("Health", StatusCode.Unavailable, "x");
         // The 50ms deadline is shorter than the first 100ms backoff, so no retry is attempted.
         using var client = NewClient(invoker, time, Fast, timeout: TimeSpan.FromMilliseconds(50));
 
-        await Assert.That(async () => await client.Health.CheckAsync()).Throws<OpenShellException>();
+        // Real-time guard so a regression fails instead of waiting forever on the fake clock.
+        await Assert.That(async () => await client.Health.CheckAsync().AsTask().WaitAsync(TimeSpan.FromSeconds(10))).Throws<OpenShellException>();
 
         await Assert.That(invoker.CountOf("Health")).IsEqualTo(1);
     }

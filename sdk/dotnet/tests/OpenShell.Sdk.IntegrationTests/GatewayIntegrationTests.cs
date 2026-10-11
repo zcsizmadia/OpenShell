@@ -54,7 +54,7 @@ public class GatewayIntegrationTests
     public async Task Sandbox_lifecycle_with_exec_and_streaming(CancellationToken cancellationToken)
     {
         using var client = GatewayFixture.Connect();
-        var name = GatewayFixture.UniqueName("dotnet-smoke");
+        var name = GatewayFixture.UniqueName("dn-smoke");
         var created = await client.Sandboxes.CreateAsync(
             name, new SandboxSpec { Image = GatewayFixture.Image }, new CreateSandboxOptions { Labels = new Dictionary<string, string> { ["sdk"] = "dotnet" } }, cancellationToken);
         string? sandboxId = created.Id;

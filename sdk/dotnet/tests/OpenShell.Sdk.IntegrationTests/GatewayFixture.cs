@@ -44,8 +44,17 @@ internal static class GatewayFixture
         });
     }
 
-    /// <summary>A unique, DNS-safe sandbox name for one test run.</summary>
-    public static string UniqueName(string prefix) => $"{prefix}-{Random.Shared.Next(100_000_000, 999_999_999)}";
+    /// <summary>The gateway's limit on sandbox names (<c>MAX_ROUTABLE_NAME_LEN</c> in <c>openshell-server</c>).</summary>
+    public const int MaxSandboxNameLength = 19;
+
+    /// <summary>A unique, DNS-safe sandbox name for one test run; the prefix may be at most 9 characters.</summary>
+    public static string UniqueName(string prefix)
+    {
+        var name = $"{prefix}-{Random.Shared.Next(100_000_000, 999_999_999)}";
+        return name.Length <= MaxSandboxNameLength
+            ? name
+            : throw new ArgumentException($"'{name}' exceeds the gateway's {MaxSandboxNameLength}-character sandbox name limit", nameof(prefix));
+    }
 
     private static TlsOptions? BuildTls()
     {

@@ -41,7 +41,9 @@ done
 
 # Runs against a real gateway; every test skips unless OPENSHELL_GATEWAY_ADDRESS
 # is set (see tests/OpenShell.Sdk.IntegrationTests/GatewayFixture.cs for the
-# optional token, CA, and mTLS variables). Not part of the CI task.
+# optional token, CA, and mTLS variables). Not part of the CI task. For a
+# local gateway, start deploy/docker/docker-compose.yml (Docker driver,
+# plaintext, no auth) and set OPENSHELL_GATEWAY_ADDRESS=http://127.0.0.1:8080.
 ["sdk:dotnet:test:integration"]
 description = "Run .NET SDK integration tests against the gateway in OPENSHELL_GATEWAY_ADDRESS"
 depends = ["sdk:dotnet:build"]

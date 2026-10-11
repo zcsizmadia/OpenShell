@@ -123,13 +123,21 @@ internal static class FileLocks
     /// Opens <paramref name="path"/> with no sharing, the way antivirus briefly holds a file it is scanning,
     /// and releases it after <paramref name="hold"/>. The returned task completes once the handle is closed.
     /// </summary>
+    /// <remarks>
+    /// The release runs on a dedicated thread, not the thread pool: the code under test retries synchronously, and a
+    /// pool starved by parallel tests could otherwise delay the release past the retry budget.
+    /// </remarks>
     public static Task HoldExclusively(string path, TimeSpan hold)
     {
         var handle = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.None);
-        return Task.Run(async () =>
+        var released = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        new Thread(() =>
         {
-            await Task.Delay(hold);
-            await handle.DisposeAsync();
-        });
+            Thread.Sleep(hold);
+            handle.Dispose();
+            released.SetResult();
+        })
+        { IsBackground = true }.Start();
+        return released.Task;
     }
 }

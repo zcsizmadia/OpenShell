@@ -330,8 +330,11 @@ public class EdgeTunnelProxyTests
 
         proxy.Dispose();
 
-        using var client = new TcpClient();
-        await Assert.That(async () => await client.ConnectAsync(endpoint).WaitAsync(TimeSpan.FromSeconds(5))).Throws<SocketException>();
+        // Rebinding the port succeeds only once the listener is closed. A refused connect would also show it, but on
+        // Windows a connect to a closed loopback port retries for seconds and timed out under parallel test load.
+        var rebound = new TcpListener(endpoint);
+        await Assert.That(rebound.Start).ThrowsNothing();
+        rebound.Stop();
     }
 
     // ---- default connector against a real WebSocket server ----

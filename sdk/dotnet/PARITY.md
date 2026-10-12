@@ -100,7 +100,7 @@ and has not run against a real gateway.
 | `AddOpenShellFake()` to swap the fake into a DI container | none | ⬜ |
 | Shared conformance fixtures consumed by tests (`sdk/conformance/*.json`) | G T P | ✅ |
 | Unit tests on an in-memory gRPC invoker, net8.0, net10.0 and net11.0 | G T P | ✅ |
-| Integration tests against a real gateway (`OPENSHELL_GATEWAY_ADDRESS`) | G | ⚠️ written, skipped without a gateway, never run against a real one |
+| Integration tests against a real gateway (`OPENSHELL_GATEWAY_ADDRESS`) | G | ✅ pass against the `deploy/docker` Compose gateway on all three frameworks; skipped without a gateway and not run in CI |
 | Testcontainers fixture for a one-command local gateway | none | ⬜ |
 
 ## Packaging, docs, and CI

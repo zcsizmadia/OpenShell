@@ -377,3 +377,10 @@ mise run sdk:dotnet:ci
 ```
 
 The task runs the format check, builds both target frameworks, runs the TUnit tests with a coverage summary, and packs the NuGet package. It needs the .NET 8 and .NET 10 SDKs.
+
+The integration tests skip unless `OPENSHELL_GATEWAY_ADDRESS` is set. To run them against a local gateway with the Docker driver:
+
+```shell
+docker compose -f deploy/docker/docker-compose.yml up -d
+OPENSHELL_GATEWAY_ADDRESS=http://127.0.0.1:8080 mise run sdk:dotnet:test:integration
+```
